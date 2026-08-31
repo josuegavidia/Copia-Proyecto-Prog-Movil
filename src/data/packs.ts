@@ -1,0 +1,73 @@
+import { PackDefinition } from '../types';
+
+export const PACK_DEFINITIONS: PackDefinition[] = [
+  {
+    id: 'pack-bronze',
+    name: 'Sobre Bronce',
+    description: '5 cartas de nivel Bronce (hasta 77 OVR).',
+    cost: 250,
+    cardCount: 5,
+    themeColor: '#8C5A2B',
+    secondaryColor: '#E6D5C3',
+    badge: 'BRONCE',
+    guaranteedMinRarity: 'BRONZE',
+    rarityChances: {
+      diamond: 0.0,
+      gold: 0.0,
+      silver: 0.0,
+      bronze: 1.0,
+    },
+  },
+  {
+    id: 'pack-silver',
+    name: 'Sobre Plata',
+    description: '4 cartas de nivel Plata (78-84 OVR).',
+    cost: 500,
+    cardCount: 4,
+    themeColor: '#64748B',
+    secondaryColor: '#E2E8F0',
+    badge: 'PLATA',
+    guaranteedMinRarity: 'SILVER',
+    rarityChances: {
+      diamond: 0.0,
+      gold: 0.0,
+      silver: 1.0,
+      bronze: 0.0,
+    },
+  },
+  {
+    id: 'pack-gold',
+    name: 'Sobre Oro',
+    description: '3 cartas de nivel Oro (85-92 OVR).',
+    cost: 1000,
+    cardCount: 3,
+    themeColor: '#CA8A04',
+    secondaryColor: '#FEF08A',
+    badge: 'ORO',
+    guaranteedMinRarity: 'GOLD',
+    rarityChances: {
+      diamond: 0.0,
+      gold: 1.0,
+      silver: 0.0,
+      bronze: 0.0,
+    },
+  },
+  {
+    id: 'pack-diamond',
+    name: 'Sobre Diamante',
+    description: '2 cartas de nivel Diamante (93+ OVR).',
+    cost: 2000,
+    cardCount: 2,
+    themeColor: '#0284C7',
+    secondaryColor: '#BAE6FD',
+    badge: 'DIAMANTE',
+    guaranteedMinRarity: 'DIAMOND',
+    rarityChances: {
+      diamond: 1.0,
+      gold: 0.0,
+      silver: 0.0,
+      bronze: 0.0,
+    },
+  },
+];
+
