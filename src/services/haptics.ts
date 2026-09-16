@@ -51,7 +51,8 @@ export const HapticsService = {
           break;
 
         case 'DIAMOND':
-          // Épico: Secuencia escalada de alta intensidad + Success chime
+        case 'ICON':
+          // Épico / Legendario: Secuencia escalada de máxima intensidad + Success chime
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           setTimeout(async () => {
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);

@@ -6,11 +6,17 @@ const RARITY_HIERARCHY: Record<CardRarity, number> = {
   SILVER: 2,
   GOLD: 3,
   DIAMOND: 4,
+  ICON: 5,
 };
 
 const pickRarity = (chances: PackDefinition['rarityChances']): CardRarity => {
   const rand = Math.random();
   let cumulative = 0;
+
+  if (chances.icon) {
+    cumulative += chances.icon;
+    if (rand < cumulative) return 'ICON';
+  }
 
   cumulative += chances.diamond;
   if (rand < cumulative) return 'DIAMOND';

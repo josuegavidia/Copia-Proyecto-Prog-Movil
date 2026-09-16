@@ -18,6 +18,8 @@ import { CustomCoachCard } from '../components/Card/CustomCoachCard';
 import { BackgroundRemovalService } from '../services/backgroundRemoval';
 import { HapticsService } from '../services/haptics';
 import { Ionicon } from '../components/Common/Ionicon';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { addCoach, updateLineup } from '../store/slices/squadSlice';
 
 const TACTICS_LIST: { style: TacticStyle; off: number; def: number; desc: string }[] = [
   {
@@ -71,16 +73,20 @@ const CARD_QUALITY_COLORS: { name: string; hex: string; label: string }[] = [
 ];
 
 interface CoachCreatorScreenProps {
-  currentCoach: CustomCoach | null;
-  onSaveCoach: (coach: CustomCoach) => void;
-  onAssignToLineup: (coach: CustomCoach) => void;
+  currentCoach?: CustomCoach | null;
+  onSaveCoach?: (coach: CustomCoach) => void;
+  onAssignToLineup?: (coach: CustomCoach) => void;
 }
 
 export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
-  currentCoach,
+  currentCoach: propsCurrentCoach,
   onSaveCoach,
   onAssignToLineup,
 }) => {
+  const dispatch = useAppDispatch();
+  const reduxLineup = useAppSelector((state) => state.squad.lineup);
+  const currentCoach = propsCurrentCoach !== undefined ? propsCurrentCoach : reduxLineup.coach;
+
   const [activeTab, setActiveTab] = useState<'profile' | 'tactics'>('profile');
 
   const [coachName, setCoachName] = useState(
@@ -128,8 +134,17 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
       isInitialMount.current = false;
       return;
     }
-    onSaveCoach(constructedCoach);
-    onAssignToLineup(constructedCoach);
+    if (onSaveCoach) {
+      onSaveCoach(constructedCoach);
+    } else {
+      dispatch(addCoach(constructedCoach));
+    }
+
+    if (onAssignToLineup) {
+      onAssignToLineup(constructedCoach);
+    } else {
+      dispatch(updateLineup({ ...reduxLineup, coach: constructedCoach }));
+    }
   }, [coachName, photoUri, selectedTeam, selectedTactic, bgColor]);
 
   const handleTakeSelfie = async () => {

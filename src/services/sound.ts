@@ -1,14 +1,17 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { CardRarity } from '../types';
 
 // High-compatibility MP3 streams
 const SOUND_URIS = {
   TEAR: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3', // Paper tear
   BRONZE: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', // Soft wood tap
-  SILVER: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3', // Crisp NBA basketball net swish + metallic silver tone
+  SILVER: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3', // Crisp NBA basketball net swish
   GOLD: 'https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3', // Bright golden win chime fanfare
   DIAMOND: 'https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3', // Stadium crowd applause & cheer
   VICTORY: 'https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3',
+  SWISH: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3', // Net swish
+  CLANK: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', // Rim clank
+  MONEYBALL: 'https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3', // Chime fanfare
 };
 
 class SoundServiceClass {
@@ -16,11 +19,11 @@ class SoundServiceClass {
 
   async init() {
     try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-      });
+      if (setAudioModeAsync) {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+        });
+      }
       this.isInitialized = true;
     } catch {
       // Safe fallback
@@ -30,15 +33,18 @@ class SoundServiceClass {
   private playSoundSafely(uri: string, volume = 1.0) {
     setTimeout(async () => {
       try {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri },
-          { shouldPlay: true, volume }
-        );
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            sound.unloadAsync().catch(() => {});
-          }
-        });
+        if (createAudioPlayer) {
+          const player = createAudioPlayer({ uri });
+          player.volume = volume;
+          player.play();
+          setTimeout(() => {
+            try {
+              player.release();
+            } catch {
+              // ignore
+            }
+          }, 3500);
+        }
       } catch {
         // Safe catch
       }
@@ -56,15 +62,13 @@ class SoundServiceClass {
         this.playSoundSafely(SOUND_URIS.BRONZE, 0.7);
         break;
       case 'SILVER':
-        // Calm, subtle pleasant tone
         this.playSoundSafely(SOUND_URIS.SILVER, 0.7);
         break;
       case 'GOLD':
-        // Bright golden fanfare
         this.playSoundSafely(SOUND_URIS.GOLD, 0.9);
         break;
       case 'DIAMOND':
-        // Stadium crowd applause
+      case 'ICON':
         this.playSoundSafely(SOUND_URIS.DIAMOND, 1.0);
         break;
     }
@@ -72,6 +76,18 @@ class SoundServiceClass {
 
   playVictory() {
     this.playSoundSafely(SOUND_URIS.VICTORY, 1.0);
+  }
+
+  playSwish() {
+    this.playSoundSafely(SOUND_URIS.SWISH, 0.85);
+  }
+
+  playClank() {
+    this.playSoundSafely(SOUND_URIS.CLANK, 0.75);
+  }
+
+  playMoneyBall() {
+    this.playSoundSafely(SOUND_URIS.MONEYBALL, 0.95);
   }
 }
 

@@ -11,22 +11,30 @@ import {
 import { PackDefinition, UserCard } from '../types';
 import { PACK_DEFINITIONS } from '../data/packs';
 import { PackOpeningModal } from '../components/Pack/PackOpeningModal';
+import { DailyMarketView } from '../components/Market/DailyMarketView';
 import { StorageService } from '../services/storage';
 import { HapticsService } from '../services/haptics';
 import { THEME } from '../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { addCards, spendCoins } from '../store/slices/squadSlice';
 
 const FREE_PACK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface PacksScreenProps {
-  coins: number;
-  onPacksOpened: (newCards: UserCard[], cost: number) => void;
+  coins?: number;
+  onPacksOpened?: (newCards: UserCard[], cost: number) => void;
 }
 
 export const PacksScreen: React.FC<PacksScreenProps> = ({
-  coins,
+  coins: propsCoins,
   onPacksOpened,
 }) => {
+  const dispatch = useAppDispatch();
+  const reduxCoins = useAppSelector((state) => state.squad.coins);
+  const coins = propsCoins !== undefined ? propsCoins : reduxCoins;
+
+  const [storeTab, setStoreTab] = useState<'PACKS' | 'MARKET'>('PACKS');
   const [selectedPack, setSelectedPack] = useState<PackDefinition | null>(null);
   const [openingCost, setOpeningCost] = useState<number>(0);
   const [isOpeningModalVisible, setIsOpeningModalVisible] = useState(false);
@@ -94,9 +102,16 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
     setIsOpeningModalVisible(true);
   };
 
-  const handleCardsObtained = (newCards: UserCard[]) => {
+  const handleCardsObtained = async (newCards: UserCard[]) => {
     if (selectedPack) {
-      onPacksOpened(newCards, openingCost);
+      if (onPacksOpened) {
+        onPacksOpened(newCards, openingCost);
+      } else {
+        await dispatch(addCards(newCards));
+        if (openingCost > 0) {
+          await dispatch(spendCoins(openingCost));
+        }
+      }
     }
   };
 
@@ -133,14 +148,68 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
         </View>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Text style={styles.sectionHeader}>TIENDA OFICIAL DE SOBRES NBA</Text>
-        <Text style={styles.sectionSub}>
-          Colecciona las estrellas de la NBA para potenciar tu quinteto titular
-        </Text>
+      {/* STORE SUB-TABS: PACKS VS DAILY ROTATING MARKET */}
+      <View style={styles.storeTabsRow}>
+        <TouchableOpacity
+          onPress={() => {
+            HapticsService.selectionTick();
+            setStoreTab('PACKS');
+          }}
+          style={[styles.storeTabBtn, storeTab === 'PACKS' && styles.storeTabBtnActive]}
+        >
+          <Ionicons
+            name="cube"
+            size={15}
+            color={storeTab === 'PACKS' ? '#FFFFFF' : '#64748B'}
+            style={{ marginRight: 6 }}
+          />
+          <Text style={[styles.storeTabBtnText, storeTab === 'PACKS' && styles.storeTabBtnTextActive]}>
+            Sobres Oficiales
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            HapticsService.selectionTick();
+            setStoreTab('MARKET');
+          }}
+          style={[styles.storeTabBtn, storeTab === 'MARKET' && styles.storeTabBtnActiveMarket]}
+        >
+          <Ionicons
+            name="basket"
+            size={15}
+            color={storeTab === 'MARKET' ? '#FFFFFF' : '#DC2626'}
+            style={{ marginRight: 6 }}
+          />
+          <Text style={[styles.storeTabBtnText, storeTab === 'MARKET' && styles.storeTabBtnTextActive]}>
+            Mercado 24h
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {storeTab === 'MARKET' ? (
+        <DailyMarketView
+          coins={coins}
+          onBuyPlayer={async (newCard, cost) => {
+            if (onPacksOpened) {
+              onPacksOpened([newCard], cost);
+            } else {
+              await dispatch(addCards([newCard]));
+              if (cost > 0) {
+                await dispatch(spendCoins(cost));
+              }
+            }
+          }}
+        />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <Text style={styles.sectionHeader}>TIENDA OFICIAL DE SOBRES NBA</Text>
+          <Text style={styles.sectionSub}>
+            Colecciona las estrellas de la NBA para potenciar tu quinteto titular
+          </Text>
 
         {/* Packs Grid */}
         <View style={styles.packsGrid}>
@@ -263,6 +332,7 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
           })}
         </View>
       </ScrollView>
+      )}
 
       {/* Shake to Open Modal */}
       <PackOpeningModal
@@ -289,6 +359,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+  },
+  storeTabsRow: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    gap: 8,
+  },
+  storeTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+  },
+  storeTabBtnActive: {
+    backgroundColor: '#1D428A',
+  },
+  storeTabBtnActiveMarket: {
+    backgroundColor: '#DC2626',
+  },
+  storeTabBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  storeTabBtnTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   coinsCounter: {
     flexDirection: 'row',

@@ -14,6 +14,11 @@ const KEYS = {
   TEAM_NAME: '@nba_entregable_team_name_v5',
   TEAM_LOGO: '@nba_entregable_team_logo_v5',
   TEAM_ABBR: '@nba_entregable_team_abbr_v5',
+  THREE_POINT_RECORD: '@nba_entregable_3pt_record_v5',
+  LANGUAGE: '@nba_entregable_language_v1',
+  CLAIMED_ACHIEVEMENTS: '@nba_entregable_claimed_achievements_v1',
+  LOGIN_DAYS_RECORD: '@nba_entregable_login_days_v1',
+  CAREER_STATS: '@nba_entregable_career_stats_v1',
 };
 
 export const createStarterCards = (): UserCard[] => {
@@ -388,6 +393,187 @@ export const StorageService = {
       await AsyncStorage.setItem(KEYS.LAST_FREE_PACK, timestamp.toString());
     } catch (e) {
       console.error('Failed to set last free pack time', e);
+    }
+  },
+
+  getThreePointHighScore: async (): Promise<{ score: number; shooterName: string }> => {
+    try {
+      const val = await AsyncStorage.getItem(KEYS.THREE_POINT_RECORD);
+      if (val) {
+        return JSON.parse(val);
+      }
+    } catch {}
+    return { score: 0, shooterName: 'Ninguno' };
+  },
+
+  saveThreePointHighScore: async (score: number, shooterName: string): Promise<boolean> => {
+    try {
+      const current = await StorageService.getThreePointHighScore();
+      if (score > current.score) {
+        await AsyncStorage.setItem(
+          KEYS.THREE_POINT_RECORD,
+          JSON.stringify({ score, shooterName, date: new Date().toISOString() })
+        );
+        // Also update career stats
+        await StorageService.updateCareerStats((prev) => ({
+          ...prev,
+          threePointHighScore: Math.max(prev.threePointHighScore, score),
+        }));
+        return true; // New record
+      }
+    } catch (e) {
+      console.error('Failed to save 3pt high score', e);
+    }
+    return false;
+  },
+
+  // Language Settings
+  getLanguage: async (): Promise<'es' | 'en'> => {
+    try {
+      const val = await AsyncStorage.getItem(KEYS.LANGUAGE);
+      return val === 'en' ? 'en' : 'es';
+    } catch {
+      return 'es';
+    }
+  },
+
+  setLanguage: async (lang: 'es' | 'en'): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(KEYS.LANGUAGE, lang);
+    } catch (e) {
+      console.error('Failed to save language', e);
+    }
+  },
+
+  // Daily Login Tracker
+  recordDailyLogin: async (): Promise<number> => {
+    try {
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const raw = await AsyncStorage.getItem(KEYS.LOGIN_DAYS_RECORD);
+      let record: { lastDate: string; days: number; history: string[] } = {
+        lastDate: '',
+        days: 0,
+        history: [],
+      };
+
+      if (raw) {
+        record = JSON.parse(raw);
+      }
+
+      if (record.lastDate !== today) {
+        record.lastDate = today;
+        record.days = (record.days || 0) + 1;
+        if (!record.history) record.history = [];
+        record.history.push(today);
+        await AsyncStorage.setItem(KEYS.LOGIN_DAYS_RECORD, JSON.stringify(record));
+      }
+
+      return record.days || 1;
+    } catch {
+      return 1;
+    }
+  },
+
+  getLoginDays: async (): Promise<number> => {
+    try {
+      const raw = await AsyncStorage.getItem(KEYS.LOGIN_DAYS_RECORD);
+      if (raw) {
+        const record = JSON.parse(raw);
+        return record.days || 1;
+      }
+    } catch {}
+    return 1;
+  },
+
+  // Claimed Achievements
+  getClaimedAchievements: async (): Promise<string[]> => {
+    try {
+      const raw = await AsyncStorage.getItem(KEYS.CLAIMED_ACHIEVEMENTS);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  claimAchievement: async (achievementId: string): Promise<string[]> => {
+    try {
+      const current = await StorageService.getClaimedAchievements();
+      if (!current.includes(achievementId)) {
+        const updated = [...current, achievementId];
+        await AsyncStorage.setItem(KEYS.CLAIMED_ACHIEVEMENTS, JSON.stringify(updated));
+        return updated;
+      }
+      return current;
+    } catch {
+      return [];
+    }
+  },
+
+  // Career Stats Tracker
+  getCareerStats: async (): Promise<{
+    daysLoggedIn: number;
+    hasCoachPhoto: boolean;
+    seasonsWon: number;
+    totalPacksOpened: number;
+    threePointHighScore: number;
+  }> => {
+    try {
+      const raw = await AsyncStorage.getItem(KEYS.CAREER_STATS);
+      const loginDays = await StorageService.getLoginDays();
+      const threePt = await StorageService.getThreePointHighScore();
+
+      const defaults = {
+        daysLoggedIn: loginDays,
+        hasCoachPhoto: false,
+        seasonsWon: 0,
+        totalPacksOpened: 0,
+        threePointHighScore: threePt.score || 0,
+      };
+
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          ...defaults,
+          ...parsed,
+          daysLoggedIn: loginDays,
+          threePointHighScore: Math.max(parsed.threePointHighScore || 0, threePt.score || 0),
+        };
+      }
+      return defaults;
+    } catch {
+      return {
+        daysLoggedIn: 1,
+        hasCoachPhoto: false,
+        seasonsWon: 0,
+        totalPacksOpened: 0,
+        threePointHighScore: 0,
+      };
+    }
+  },
+
+  updateCareerStats: async (
+    updater: (prev: {
+      daysLoggedIn: number;
+      hasCoachPhoto: boolean;
+      seasonsWon: number;
+      totalPacksOpened: number;
+      threePointHighScore: number;
+    }) => {
+      daysLoggedIn: number;
+      hasCoachPhoto: boolean;
+      seasonsWon: number;
+      totalPacksOpened: number;
+      threePointHighScore: number;
+    }
+  ) => {
+    try {
+      const current = await StorageService.getCareerStats();
+      const updated = updater(current);
+      await AsyncStorage.setItem(KEYS.CAREER_STATS, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error('Failed to update career stats', e);
+      return null;
     }
   },
 };

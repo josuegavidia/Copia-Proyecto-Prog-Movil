@@ -1,8 +1,10 @@
 export type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
 
-export type CardRarity = 'DIAMOND' | 'GOLD' | 'SILVER' | 'BRONZE';
+export type CardRarity = 'ICON' | 'DIAMOND' | 'GOLD' | 'SILVER' | 'BRONZE';
 
 export type Conference = 'Eastern' | 'Western';
+
+export type UnitType = 'STARTER' | 'BENCH' | 'RESERVE' | 'LEGEND';
 
 export interface PlayerStats {
   ovr: number;
@@ -41,6 +43,8 @@ export interface NBAPlayer {
   stats: PlayerStats;
   imageUrl: string;
   isLegend?: boolean;
+  classicTeamYear?: string;
+  unitType?: UnitType;
 }
 
 export interface UserCard {
@@ -89,6 +93,22 @@ export interface SquadLineup {
   coach: CustomCoach | null;
 }
 
+export interface MarketItem {
+  id: string;
+  player: NBAPlayer;
+  price: number;
+  originalPrice?: number;
+  discountPct?: number;
+  isDailyDeal?: boolean;
+  isSold: boolean;
+}
+
+export interface DailyMarketState {
+  lastRotationTimestamp: number;
+  expiresAt: number;
+  items: MarketItem[];
+}
+
 export interface StructuredSynergyBonus {
   iconName: string;
   text: string;
@@ -116,6 +136,7 @@ export interface PackDefinition {
   guaranteedMinRarity: CardRarity;
   conferenceOnly?: Conference;
   rarityChances: {
+    icon?: number;
     diamond: number;
     gold: number;
     silver: number;
@@ -134,6 +155,8 @@ export interface TeamStanding {
   isUserTeam?: boolean;
 }
 
+export type LeagueDifficulty = 'HARD' | 'MEDIUM';
+
 export interface SeasonProgress {
   currentMatchIndex: number;
   totalMatches: number;
@@ -143,4 +166,40 @@ export interface SeasonProgress {
   isCompleted?: boolean;
   rewardClaimed?: boolean;
   finalRank?: number;
+  difficulty?: LeagueDifficulty; // 'HARD' = Quintetos Titulares, 'MEDIUM' = Quintetos Suplentes
+}
+
+export interface ClassicTeam {
+  id: string;
+  name: string;
+  year: string;
+  franchise: string;
+  teamAbbr: string;
+  logoUrl: string;
+  ovr: number;
+  description: string;
+  starters: NBAPlayer[];
+}
+
+export interface PlayerTransferMovement {
+  season: string;        // e.g. "24/25", "22/23", "18/19"
+  date: string;          // e.g. "01/07/2024", "12/07/2022", "21/06/2018"
+  fromTeam: string;      // e.g. "Western Kentucky", "New York Knicks"
+  fromTeamAbbr?: string; // e.g. "NYK", "BOS"
+  fromTeamLogo?: string; // logo URL or placeholder
+  toTeam: string;        // e.g. "New York Knicks"
+  toTeamAbbr: string;    // e.g. "NYK"
+  toTeamLogo: string;    // official NBA logo URL
+  marketValue?: string;  // e.g. "60,00 mill. $"
+  feeOrType: string;     // e.g. "Draft NBA (#36)", "Renovación", "Traspaso", "Agente Libre"
+}
+
+export interface PlayerDraftInfo {
+  year: number | string;
+  round: number | string;
+  pick: number | string;
+  teamName: string;
+  teamAbbr: string;
+  teamLogo: string;
+  origin: string;
 }

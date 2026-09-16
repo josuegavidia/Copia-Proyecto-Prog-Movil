@@ -10,6 +10,7 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SquadLineup, UserCard, Position } from '../types';
 import { calculateSquadSynergy } from '../services/chemistry';
 import { StorageService } from '../services/storage';
@@ -22,25 +23,51 @@ import { HapticsService } from '../services/haptics';
 import { THEME } from '../theme/colors';
 import { Ionicon } from '../components/Common/Ionicon';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { updateLineup, earnCoins } from '../store/slices/squadSlice';
 
 interface SquadScreenProps {
-  lineup: SquadLineup;
-  inventory: UserCard[];
-  onUpdateLineup: (newLineup: SquadLineup) => void;
-  onNavigateToCoachCreator: () => void;
-  onCoinsEarned: (coins: number) => void;
+  lineup?: SquadLineup;
+  inventory?: UserCard[];
+  onUpdateLineup?: (newLineup: SquadLineup) => void;
+  onNavigateToCoachCreator?: () => void;
+  onCoinsEarned?: (coins: number) => void;
 }
 
 const PLAYER_SLOT_KEYS: ('pg' | 'sg' | 'sf' | 'pf' | 'c')[] = ['pg', 'sg', 'sf', 'pf', 'c'];
 const NBA_TEAMS_LIST = Object.values(NBA_TEAMS);
 
 export const SquadScreen: React.FC<SquadScreenProps> = ({
-  lineup,
-  inventory,
+  lineup: propsLineup,
+  inventory: propsInventory,
   onUpdateLineup,
   onNavigateToCoachCreator,
   onCoinsEarned,
 }) => {
+  const dispatch = useAppDispatch();
+  const navigation = useNavigation<any>();
+  const reduxLineup = useAppSelector((state) => state.squad.lineup);
+  const reduxCards = useAppSelector((state) => state.squad.cards);
+
+  const lineup = propsLineup || reduxLineup;
+  const inventory = propsInventory || reduxCards;
+
+  const handleUpdateSquadLineup = (newLineup: SquadLineup) => {
+    if (onUpdateLineup) {
+      onUpdateLineup(newLineup);
+    } else {
+      dispatch(updateLineup(newLineup));
+    }
+  };
+
+  const handleCoinsEarned = (coins: number) => {
+    if (onCoinsEarned) {
+      onCoinsEarned(coins);
+    } else {
+      dispatch(earnCoins(coins));
+    }
+  };
+
   const [teamName, setTeamNameState] = useState<string>('Mi Franquicia');
   const [teamLogo, setTeamLogoState] = useState<string>('https://a.espncdn.com/i/teamlogos/nba/500/lal.png');
   const [teamAbbr, setTeamAbbrState] = useState<string>('LAL');
@@ -90,7 +117,7 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
       teamLogo: updatedLogo,
       teamAbbr: updatedAbbr,
     };
-    onUpdateLineup(updatedLineup);
+    handleUpdateSquadLineup(updatedLineup);
     setNameEditModalVisible(false);
   };
 
@@ -115,7 +142,7 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
       [key]: card,
     };
 
-    onUpdateLineup(updatedLineup);
+    handleUpdateSquadLineup(updatedLineup);
     setSelectModalVisible(false);
   };
 
@@ -241,7 +268,7 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
           lineup={lineup}
           onSlotPress={handleSlotPress}
           onPlayerPress={handlePlayerPress}
-          onCoachPress={onNavigateToCoachCreator}
+          onCoachPress={onNavigateToCoachCreator || (() => navigation.navigate('Coach'))}
         />
 
         {synergy.structuredBonuses && synergy.structuredBonuses.length > 0 && (
@@ -290,17 +317,19 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
         )}
       </ScrollView>
 
-      <PlayerDetailModal
-        visible={inspectedCard !== null}
-        player={inspectedCard ? inspectedCard.card.player : null}
-        actionLabel="Sustituir Jugador"
-        onAction={() => {
-          if (inspectedCard) {
-            handleSlotPress(inspectedCard.position);
-          }
-        }}
-        onClose={() => setInspectedCard(null)}
-      />
+      {inspectedCard && (
+        <PlayerDetailModal
+          visible={true}
+          player={inspectedCard.card.player}
+          actionLabel="Sustituir Jugador"
+          onAction={() => {
+            const pos = inspectedCard.position;
+            setInspectedCard(null);
+            handleSlotPress(pos);
+          }}
+          onClose={() => setInspectedCard(null)}
+        />
+      )}
 
       <PlayerSelectModal
         visible={selectModalVisible}

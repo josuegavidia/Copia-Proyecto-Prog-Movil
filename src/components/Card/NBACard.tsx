@@ -1,18 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Image,
   TouchableOpacity,
+  StyleProp,
+  ViewStyle,
+  DimensionValue,
 } from 'react-native';
 import { NBAPlayer } from '../../types';
 import { NBA_TEAMS } from '../../data/nbaTeams';
 import { RARITY_COLORS } from '../../theme/colors';
+import { getPlayerFallbackHeadshotUrl, FALLBACK_HEADSHOT_URL } from '../../utils/imageUtils';
 
 interface NBACardProps {
   player: NBAPlayer;
   size?: 'sm' | 'md' | 'lg';
+  width?: DimensionValue;
+  style?: StyleProp<ViewStyle>;
   onPress?: () => void;
   showDetailsOnFlip?: boolean;
 }
@@ -20,10 +26,18 @@ interface NBACardProps {
 export const NBACard: React.FC<NBACardProps> = ({
   player,
   size = 'md',
+  width,
+  style,
   onPress,
   showDetailsOnFlip = false,
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [imgUrl, setImgUrl] = useState<string>(player.imageUrl);
+
+  useEffect(() => {
+    setImgUrl(player.imageUrl);
+  }, [player.imageUrl]);
+
   const team = NBA_TEAMS[player.teamAbbr] || {
     primaryColor: '#0284C7',
     secondaryColor: '#38BDF8',
@@ -33,8 +47,9 @@ export const NBACard: React.FC<NBACardProps> = ({
 
   const rarityConfig = RARITY_COLORS[player.rarity] || RARITY_COLORS.BRONZE;
 
-  const cardWidth = size === 'sm' ? 104 : size === 'md' ? 155 : 270;
-  const cardHeight = size === 'sm' ? 148 : size === 'md' ? 230 : 390;
+  const defaultCardWidth: DimensionValue = size === 'sm' ? 104 : size === 'md' ? '100%' : 270;
+  const cardWidth: DimensionValue = width !== undefined ? width : defaultCardWidth;
+  const cardHeight = size === 'sm' ? 148 : size === 'md' ? 224 : 390;
 
   const handlePress = () => {
     if (showDetailsOnFlip) {
@@ -42,6 +57,19 @@ export const NBACard: React.FC<NBACardProps> = ({
     }
     if (onPress) {
       onPress();
+    }
+  };
+
+  const handleImageError = () => {
+    if (player.nbaPersonId) {
+      const fallback260 = getPlayerFallbackHeadshotUrl(player.nbaPersonId);
+      if (imgUrl !== fallback260 && imgUrl !== FALLBACK_HEADSHOT_URL) {
+        setImgUrl(fallback260);
+      } else if (imgUrl !== FALLBACK_HEADSHOT_URL) {
+        setImgUrl(FALLBACK_HEADSHOT_URL);
+      }
+    } else if (imgUrl !== FALLBACK_HEADSHOT_URL) {
+      setImgUrl(FALLBACK_HEADSHOT_URL);
     }
   };
 
@@ -58,6 +86,7 @@ export const NBACard: React.FC<NBACardProps> = ({
             borderColor: rarityConfig.border,
             backgroundColor: rarityConfig.cardBg,
           },
+          style,
         ]}
       >
         <View style={styles.backHeader}>
@@ -103,6 +132,8 @@ export const NBACard: React.FC<NBACardProps> = ({
     );
   }
 
+  const isIcon = player.rarity === 'ICON' || player.isLegend;
+
   return (
     <TouchableOpacity
       activeOpacity={onPress || showDetailsOnFlip ? 0.85 : 1}
@@ -112,17 +143,28 @@ export const NBACard: React.FC<NBACardProps> = ({
         {
           width: cardWidth,
           height: cardHeight,
-          borderColor: rarityConfig.border,
+          borderColor: isIcon ? '#D4AF37' : rarityConfig.border,
           backgroundColor: rarityConfig.cardBg,
+          borderWidth: isIcon ? 2.5 : 2,
+          shadowColor: isIcon ? '#CA8A04' : '#000000',
+          shadowOffset: { width: 0, height: isIcon ? 4 : 2 },
+          shadowOpacity: isIcon ? 0.4 : 0.2,
+          shadowRadius: isIcon ? 6 : 3,
+          elevation: isIcon ? 6 : 3,
         },
+        style,
       ]}
     >
-      {/* Top Header Bar with OVR, Position, and Official Team Logo */}
+      {/* Top Header Bar with OVR, Position, and Official Team Logo / Classic Tag */}
       <View
         style={[
           styles.headerRow,
           size === 'sm' && styles.headerRowSm,
-          { backgroundColor: rarityConfig.headerBg },
+          {
+            backgroundColor: isIcon ? '#FEF9C3' : rarityConfig.headerBg,
+            borderColor: isIcon ? '#EAB308' : 'transparent',
+            borderWidth: isIcon ? 1 : 0,
+          },
         ]}
       >
         <View style={styles.ovrBadge}>
@@ -131,6 +173,7 @@ export const NBACard: React.FC<NBACardProps> = ({
               styles.ovrText,
               size === 'sm' && styles.ovrTextSm,
               size === 'lg' && styles.ovrTextLg,
+              isIcon && { color: '#B45309', fontWeight: '900' },
             ]}
           >
             {player.stats.ovr}
@@ -140,18 +183,19 @@ export const NBACard: React.FC<NBACardProps> = ({
               styles.posText,
               size === 'sm' && styles.posTextSm,
               size === 'lg' && styles.posTextLg,
+              isIcon && { color: '#78350F', fontWeight: '900' },
             ]}
           >
             {player.position}
           </Text>
         </View>
 
-        {/* Official Team Logo & Tag */}
+        {/* Official Team Logo & Tag or Classic Year */}
         <View
           style={[
             styles.teamTag,
             size === 'sm' && styles.teamTagSm,
-            { backgroundColor: rarityConfig.badgeBg },
+            { backgroundColor: isIcon ? '#FDE047' : rarityConfig.badgeBg },
           ]}
         >
           {team.logoUrl && (
@@ -169,10 +213,10 @@ export const NBACard: React.FC<NBACardProps> = ({
             style={[
               styles.teamTagText,
               size === 'sm' && styles.teamTagTextSm,
-              { color: rarityConfig.badgeText },
+              { color: isIcon ? '#713F12' : rarityConfig.badgeText },
             ]}
           >
-            {player.teamAbbr}
+            {player.classicTeamYear ? player.classicTeamYear : player.teamAbbr}
           </Text>
         </View>
       </View>
@@ -180,7 +224,8 @@ export const NBACard: React.FC<NBACardProps> = ({
       {/* Player Official Headshot */}
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: player.imageUrl }}
+          source={{ uri: imgUrl }}
+          onError={handleImageError}
           style={[
             styles.playerImage,
             size === 'sm' && styles.playerImageSm,
@@ -190,12 +235,17 @@ export const NBACard: React.FC<NBACardProps> = ({
         />
       </View>
 
-      {/* Player Name and Nickname */}
+      {/* Player Name and Nickname - Fixed height for identical card geometry */}
       <View
         style={[
           styles.nameContainer,
           size === 'sm' && styles.nameContainerSm,
-          { backgroundColor: rarityConfig.nameBoxBg },
+          size === 'lg' && styles.nameContainerLg,
+          {
+            backgroundColor: isIcon ? '#0F172A' : rarityConfig.nameBoxBg,
+            borderColor: isIcon ? '#CA8A04' : 'transparent',
+            borderWidth: isIcon ? 1 : 0,
+          },
         ]}
       >
         <Text
@@ -204,13 +254,14 @@ export const NBACard: React.FC<NBACardProps> = ({
             styles.playerName,
             size === 'sm' && styles.playerNameSm,
             size === 'lg' && styles.playerNameLg,
+            isIcon && { color: '#FEF08A' },
           ]}
         >
           {player.name}
         </Text>
-        {size !== 'sm' && player.nickname && (
-          <Text numberOfLines={1} style={styles.playerNickname}>
-            "{player.nickname}"
+        {size !== 'sm' && (
+          <Text numberOfLines={1} style={[styles.playerNickname, isIcon && { color: '#FDE047' }]}>
+            {player.nickname ? `"${player.nickname}"` : (player.classicTeamYear || `${player.teamAbbr} #${player.number}`)}
           </Text>
         )}
       </View>
@@ -220,25 +271,29 @@ export const NBACard: React.FC<NBACardProps> = ({
         <View
           style={[
             styles.statsBar,
-            { backgroundColor: rarityConfig.headerBg },
+            {
+              backgroundColor: isIcon ? '#F8FAFC' : rarityConfig.headerBg,
+              borderColor: isIcon ? '#E2E8F0' : 'transparent',
+              borderWidth: isIcon ? 1 : 0,
+            },
           ]}
         >
           <View style={styles.statPill}>
-            <Text style={styles.statLabel}>OFF</Text>
-            <Text style={styles.statValue}>{player.stats.offense}</Text>
+            <Text style={[styles.statLabel, isIcon && { color: '#64748B' }]}>OFF</Text>
+            <Text style={[styles.statValue, isIcon && { color: '#0F172A' }]}>{player.stats.offense}</Text>
           </View>
           <View style={styles.statPill}>
-            <Text style={styles.statLabel}>DEF</Text>
-            <Text style={styles.statValue}>{player.stats.defense}</Text>
+            <Text style={[styles.statLabel, isIcon && { color: '#64748B' }]}>DEF</Text>
+            <Text style={[styles.statValue, isIcon && { color: '#0F172A' }]}>{player.stats.defense}</Text>
           </View>
           <View style={styles.statPill}>
-            <Text style={styles.statLabel}>3PT</Text>
-            <Text style={styles.statValue}>{player.stats.threePoint}</Text>
+            <Text style={[styles.statLabel, isIcon && { color: '#64748B' }]}>3PT</Text>
+            <Text style={[styles.statValue, isIcon && { color: '#0F172A' }]}>{player.stats.threePoint}</Text>
           </View>
           {size === 'lg' && (
             <View style={styles.statPill}>
-              <Text style={styles.statLabel}>PLY</Text>
-              <Text style={styles.statValue}>{player.stats.playmaking}</Text>
+              <Text style={[styles.statLabel, isIcon && { color: '#64748B' }]}>PLY</Text>
+              <Text style={[styles.statValue, isIcon && { color: '#0F172A' }]}>{player.stats.playmaking}</Text>
             </View>
           )}
         </View>
@@ -249,17 +304,21 @@ export const NBACard: React.FC<NBACardProps> = ({
         style={[
           styles.rarityStrip,
           size === 'sm' && styles.rarityStripSm,
-          { backgroundColor: rarityConfig.badgeBg },
+          {
+            backgroundColor: isIcon ? '#FEF08A' : rarityConfig.badgeBg,
+            borderColor: isIcon ? '#CA8A04' : 'transparent',
+            borderWidth: isIcon ? 0.5 : 0,
+          },
         ]}
       >
         <Text
           style={[
             styles.rarityLabel,
             size === 'sm' && styles.rarityLabelSm,
-            { color: rarityConfig.badgeText },
+            { color: isIcon ? '#713F12' : rarityConfig.badgeText },
           ]}
         >
-          {rarityConfig.label}
+          {isIcon ? 'ICONO LEYENDA' : rarityConfig.label}
         </Text>
       </View>
     </TouchableOpacity>
@@ -279,13 +338,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    height: 26,
     borderRadius: 4,
     marginBottom: 2,
   },
   headerRowSm: {
     paddingHorizontal: 4,
-    paddingVertical: 2,
+    height: 20,
     marginBottom: 2,
   },
   ovrBadge: {
@@ -294,12 +353,12 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   ovrText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '900',
     color: '#FFFFFF',
   },
   ovrTextSm: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '900',
   },
   ovrTextLg: {
@@ -362,25 +421,30 @@ const styles = StyleSheet.create({
   },
   playerImage: {
     width: '100%',
-    height: 115,
+    height: 110,
   },
   playerImageSm: {
-    height: 72,
+    height: 68,
   },
   playerImageLg: {
     height: 210,
   },
   nameContainer: {
     alignItems: 'center',
-    paddingVertical: 3,
+    justifyContent: 'center',
+    height: 34,
     borderRadius: 4,
     marginBottom: 3,
     paddingHorizontal: 4,
   },
   nameContainerSm: {
-    paddingVertical: 2,
+    height: 22,
+    paddingVertical: 0,
     paddingHorizontal: 3,
     marginBottom: 2,
+  },
+  nameContainerLg: {
+    height: 48,
   },
   playerName: {
     fontSize: 12,

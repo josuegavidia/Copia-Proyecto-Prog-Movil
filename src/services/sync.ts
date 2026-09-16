@@ -13,7 +13,7 @@ class SyncManager {
   private status: SyncStatus = 'LOCAL_ONLY';
   private lastSyncedAt: Date | null = null;
   private listeners: Set<SyncListener> = new Set();
-  private syncTimeout: NodeJS.Timeout | null = null;
+  private syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
   public subscribe(listener: SyncListener): () => void {
     this.listeners.add(listener);

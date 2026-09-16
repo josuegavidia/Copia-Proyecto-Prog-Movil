@@ -49,6 +49,19 @@ export const THEME = {
 
 // Vibrant, distinctive solid colors for each rarity
 export const RARITY_COLORS = {
+  ICON: {
+    border: '#CA8A04', // Championship Gold
+    cardBg: '#FFFFFF', // Pure Pearl White (FC Icon Style)
+    headerBg: '#FEF9C3', // Pale Gold Tint
+    nameBoxBg: '#1E293B', // Dark Contrast Box
+    badgeBg: '#FEF08A', // Vibrant Gold Tag
+    text: '#0F172A',
+    ovrText: '#CA8A04', // Deep Gold OVR
+    subText: '#64748B',
+    badgeText: '#854D0E',
+    label: 'ICONO',
+    glowColor: 'rgba(202, 138, 4, 0.35)',
+  },
   DIAMOND: {
     border: '#0284C7', // Electric Blue
     cardBg: '#0284C7', // Strong Solid Cyan/Blue

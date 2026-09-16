@@ -99,7 +99,8 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
       searchQuery.trim() === '' ||
       c.player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.player.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.player.teamAbbr.toLowerCase().includes(searchQuery.toLowerCase());
+      c.player.teamAbbr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.player.classicTeamYear && c.player.classicTeamYear.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return matchTeam && matchSearch;
   });
@@ -414,10 +415,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   columnWrapper: {
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
     marginBottom: 12,
   },
   cardWrapper: {
+    width: '48%',
     position: 'relative',
   },
   cardWrapperSelected: {

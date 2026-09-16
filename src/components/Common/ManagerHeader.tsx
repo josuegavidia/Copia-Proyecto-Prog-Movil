@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +12,10 @@ import { SyncService, SyncStatus } from '../../services/sync';
 import { AuthService, ManagerProfile } from '../../services/auth';
 import { HapticsService } from '../../services/haptics';
 import { NBA_THEME } from '../../theme/colors';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setAchievementsModalVisible } from '../../store/slices/squadSlice';
+import { evaluateAchievements } from '../../data/achievements';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface ManagerHeaderProps {
   coins: number;
@@ -24,13 +27,29 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
   onOpenProfile,
 }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const { t } = useTranslation();
+
+  const cards = useAppSelector((state) => state.squad.cards);
+  const claimedAchievements = useAppSelector((state) => state.squad.claimedAchievements);
+  const careerStats = useAppSelector((state) => state.squad.careerStats);
+
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(SyncService.getStatus());
   const [profile, setProfile] = useState<ManagerProfile>({
     id: 'guest',
-    username: 'Rookie Manager',
+    username: t.header.rookieManager,
     coins,
     total_packs_opened: 0,
   });
+
+  // Calculate un-claimed achievements ready to claim
+  const achievements = evaluateAchievements(
+    cards,
+    coins,
+    careerStats,
+    claimedAchievements
+  );
+  const unclaimedCount = achievements.filter((a) => a.isUnlocked && !a.isClaimed).length;
 
   useEffect(() => {
     const unsubscribe = SyncService.subscribe((status) => {
@@ -61,20 +80,25 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
   const getSyncText = () => {
     switch (syncStatus) {
       case 'SYNCING':
-        return 'Guardando...';
+        return t.header.syncing;
       case 'SYNCED':
-        return 'En la Nube';
+        return t.header.cloudSynced;
       case 'ERROR':
-        return 'Sin conexión';
+        return t.header.syncError;
       case 'LOCAL_ONLY':
       default:
-        return 'Modo Local';
+        return t.header.offlineMode;
     }
   };
 
-  const handlePress = async () => {
+  const handleProfilePress = async () => {
     await HapticsService.selectionTick();
     onOpenProfile();
+  };
+
+  const handleAchievementsPress = async () => {
+    await HapticsService.selectionTick();
+    dispatch(setAchievementsModalVisible(true));
   };
 
   return (
@@ -82,7 +106,7 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
       {/* Left: User Vector Icon & Manager Profile Button */}
       <TouchableOpacity
         style={styles.profileButton}
-        onPress={handlePress}
+        onPress={handleProfilePress}
         activeOpacity={0.7}
       >
         <View style={styles.userAvatarBox}>
@@ -91,7 +115,7 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
 
         <View style={styles.managerInfo}>
           <Text style={styles.managerName} numberOfLines={1}>
-            {profile.username || 'Rookie Manager'}
+            {profile.username || t.header.rookieManager}
           </Text>
           <View style={styles.syncRow}>
             {getSyncIcon()}
@@ -109,12 +133,33 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
         </View>
       </TouchableOpacity>
 
-      {/* Right: Coins Counter with @expo/vector-icons */}
-      <View style={styles.coinsBadge}>
-        <Ionicons name="cash-outline" size={16} color="#D97706" />
-        <Text style={styles.coinsAmount}>
-          {coins.toLocaleString()}
-        </Text>
+      {/* Right: Trophy Achievements Button + Coins Counter */}
+      <View style={styles.rightActions}>
+        {/* Trophy / Achievements Button */}
+        <TouchableOpacity
+          style={[styles.trophyButton, unclaimedCount > 0 && styles.trophyButtonHighlight]}
+          onPress={handleAchievementsPress}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="trophy-outline"
+            size={18}
+            color={unclaimedCount > 0 ? '#B45309' : '#64748B'}
+          />
+          {unclaimedCount > 0 && (
+            <View style={styles.badgeCount}>
+              <Text style={styles.badgeCountText}>{unclaimedCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Coins Counter */}
+        <View style={styles.coinsBadge}>
+          <Ionicons name="cash-outline" size={16} color="#D97706" />
+          <Text style={styles.coinsAmount}>
+            {coins.toLocaleString()}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -175,6 +220,45 @@ const styles = StyleSheet.create({
   },
   syncTextError: {
     color: '#EF4444',
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  trophyButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    position: 'relative',
+  },
+  trophyButtonHighlight: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
+  },
+  badgeCount: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444',
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  badgeCountText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
   },
   coinsBadge: {
     flexDirection: 'row',

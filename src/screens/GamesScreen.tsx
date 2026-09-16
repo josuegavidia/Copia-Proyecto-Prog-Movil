@@ -9,21 +9,27 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { SquadLineup, SquadSynergy, SeasonProgress, TeamStanding, Conference } from '../types';
+import { SquadLineup, SeasonProgress, TeamStanding, Conference, LeagueDifficulty, NBAPlayer, ClassicTeam } from '../types';
 import { NBA_TEAMS } from '../data/nbaTeams';
+import { ACTIVE_NBA_PLAYERS } from '../data/nbaPlayers';
+import { CLASSIC_TEAMS } from '../data/classicTeams';
 import { StorageService } from '../services/storage';
 import { SoundService } from '../services/sound';
 import { HapticsService } from '../services/haptics';
 import { calculateSquadSynergy } from '../services/chemistry';
 import { Ionicon } from '../components/Common/Ionicon';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { recordSeasonWon, earnCoins } from '../store/slices/squadSlice';
+import { ThreePointContestScreen } from './ThreePointContestScreen';
 
 interface GamesScreenProps {
-  lineup: SquadLineup;
-  onCoinsEarned: (coins: number) => void;
+  lineup?: SquadLineup;
+  onCoinsEarned?: (coins: number) => void;
 }
 
-type ModeTab = 'QUICK' | 'SEASON';
+type ModeTab = 'SEASON' | 'QUICK' | 'TRIPLES';
+type QuickMatchCategory = 'FRANCHISES' | 'LEGENDS';
 
 interface QuarterLogItem {
   quarter: number;
@@ -34,36 +40,25 @@ interface QuarterLogItem {
   note: string;
 }
 
-const NBA_TEAM_OVR_MAP: Record<string, number> = {
-  BOS: 96,
-  OKC: 94,
-  DAL: 94,
-  DEN: 93,
-  LAL: 92,
-  GSW: 91,
-  NYK: 91,
-  MIN: 91,
-  PHX: 90,
-  MIL: 90,
-  PHI: 89,
-  CLE: 89,
-  MIA: 88,
-  MEM: 88,
-  IND: 87,
-  SAC: 87,
-  NOP: 86,
-  ORL: 86,
-  HOU: 85,
-  SAS: 85,
-  ATL: 84,
-  CHI: 83,
-  TOR: 82,
-  UTA: 81,
-  CHA: 81,
-  BKN: 80,
-  POR: 80,
-  DET: 79,
-  WAS: 78,
+// Helper to compute realistic OVR & list of 5 players for a franchise unit (Starters vs Bench)
+export const getFranchiseUnitInfo = (
+  teamAbbr: string,
+  difficulty: LeagueDifficulty = 'HARD'
+): { ovr: number; label: string; players: NBAPlayer[] } => {
+  const franchisePlayers = ACTIVE_NBA_PLAYERS.filter((p) => p.teamAbbr === teamAbbr);
+  const targetUnit = difficulty === 'HARD' ? 'STARTER' : 'BENCH';
+  const unitPlayers = franchisePlayers.filter((p) => p.unitType === targetUnit);
+  const playersToUse = unitPlayers.length > 0 ? unitPlayers.slice(0, 5) : franchisePlayers.slice(0, 5);
+  
+  const avgOvr = playersToUse.length > 0
+    ? Math.round(playersToUse.reduce((acc, p) => acc + p.stats.ovr, 0) / playersToUse.length)
+    : 85;
+
+  return {
+    ovr: avgOvr,
+    label: difficulty === 'HARD' ? 'Quinteto Titular (Difícil)' : 'Quinteto Suplente (Medio)',
+    players: playersToUse,
+  };
 };
 
 interface SeasonRewardInfo {
@@ -127,24 +122,41 @@ export const getSeasonRewardTier = (rank: number): SeasonRewardInfo => {
 };
 
 export const GamesScreen: React.FC<GamesScreenProps> = ({
-  lineup,
+  lineup: propsLineup,
   onCoinsEarned,
 }) => {
+  const dispatch = useAppDispatch();
+  const reduxLineup = useAppSelector((state) => state.squad.lineup);
+  const lineup = propsLineup || reduxLineup;
+
+  const handleCoinsEarned = (coins: number) => {
+    if (onCoinsEarned) {
+      onCoinsEarned(coins);
+    } else {
+      dispatch(earnCoins(coins));
+    }
+  };
+
   const [currentMode, setCurrentMode] = useState<ModeTab>('SEASON');
   const [season, setSeason] = useState<SeasonProgress | null>(null);
+  const [leagueDifficulty, setLeagueDifficulty] = useState<LeagueDifficulty>('HARD');
   const [teamName, setTeamName] = useState<string>('Tu Quinteto');
   const [teamLogo, setTeamLogo] = useState<string>('https://a.espncdn.com/i/teamlogos/nba/500/lal.png');
   const [standingsConf, setStandingsConf] = useState<Conference | 'ALL'>('ALL');
   
-  // Quick Match Selected Opponent
+  // Quick Match State
+  const [quickCategory, setQuickCategory] = useState<QuickMatchCategory>('FRANCHISES');
   const teamsArray = Object.values(NBA_TEAMS);
-  const [selectedOpponentAbbr, setSelectedOpponentAbbr] = useState<string>('DEN');
+  const [selectedOpponentAbbr, setSelectedOpponentAbbr] = useState<string>('NYK');
+  const [selectedClassicTeamId, setSelectedClassicTeamId] = useState<string>(CLASSIC_TEAMS[0].id);
+  const [quickDifficulty, setQuickDifficulty] = useState<LeagueDifficulty>('HARD');
   
-  // Match in progress modal state
+  // Match simulation modal state
   const [isSimulating, setIsSimulating] = useState(false);
   const [simOpponentName, setSimOpponentName] = useState('');
   const [simOpponentLogo, setSimOpponentLogo] = useState('');
   const [simOpponentOvr, setSimOpponentOvr] = useState(85);
+  const [simOpponentSubtitle, setSimOpponentSubtitle] = useState('');
   const [isSeasonMatch, setIsSeasonMatch] = useState(false);
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [seasonEndModalVisible, setSeasonEndModalVisible] = useState(false);
@@ -162,6 +174,12 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
   const [matchDone, setMatchDone] = useState(false);
 
   const synergy = calculateSquadSynergy(lineup);
+  const cards = useAppSelector((state) => state.squad.cards);
+  const [threePointModalVisible, setThreePointModalVisible] = useState(false);
+  const [contestRecord, setContestRecord] = useState<{ score: number; shooterName: string }>({
+    score: 0,
+    shooterName: 'Ninguno',
+  });
 
   useEffect(() => {
     const loadSeason = async () => {
@@ -170,10 +188,17 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
       setTeamName(savedName);
       setTeamLogo(savedLogo);
 
-      const loaded = await StorageService.getSeason();
-      setSeason(loaded);
+      const loadedRecord = await StorageService.getThreePointHighScore();
+      setContestRecord(loadedRecord);
 
-      // If season was already completed but reward uncollected
+      const loaded = await StorageService.getSeason();
+      if (loaded) {
+        setSeason(loaded);
+        if (loaded.difficulty) {
+          setLeagueDifficulty(loaded.difficulty);
+        }
+      }
+
       if (loaded && loaded.isCompleted && !loaded.rewardClaimed) {
         const sorted = sortStandingsList(loaded.standings, 'ALL');
         const rank = sorted.findIndex((t) => t.isUserTeam) + 1 || 1;
@@ -190,23 +215,14 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
     loadSeason();
   }, []);
 
-  const getTeamOvrEstimate = (abbr: string): number => {
-    if (abbr === 'BOS') return 96;
-    if (abbr === 'DEN') return 96;
-    if (abbr === 'OKC') return 95;
-    if (abbr === 'DAL') return 94;
-    if (abbr === 'MIN') return 93;
-    if (abbr === 'NYK') return 93;
-    if (abbr === 'PHI') return 92;
-    if (abbr === 'MIL') return 92;
-    if (abbr === 'LAL') return 92;
-    if (abbr === 'GSW') return 91;
-    if (abbr === 'PHX') return 91;
-    if (abbr === 'CLE') return 91;
-    if (abbr === 'IND') return 90;
-    if (abbr === 'MIA') return 89;
-    if (abbr === 'ORL') return 89;
-    return 85;
+  const handleChangeLeagueDifficulty = async (diff: LeagueDifficulty) => {
+    await HapticsService.selectionTick();
+    setLeagueDifficulty(diff);
+    if (season) {
+      const updated = { ...season, difficulty: diff };
+      await StorageService.saveSeason(updated);
+      setSeason(updated);
+    }
   };
 
   // Sort Standings Helper
@@ -226,16 +242,18 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
     return list;
   };
 
-  // Start Simulation (for both Quick Match and Season)
+  // Start Simulation
   const handleStartSimulation = async (
     oppName: string,
     oppLogo: string,
     oppOvr: number,
+    oppSubtitle: string,
     isSeason: boolean
   ) => {
     setSimOpponentName(oppName);
     setSimOpponentLogo(oppLogo);
     setSimOpponentOvr(oppOvr);
+    setSimOpponentSubtitle(oppSubtitle);
     setIsSeasonMatch(isSeason);
 
     setMyScore(0);
@@ -248,17 +266,13 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
     let curOpp = 0;
     const logs: QuarterLogItem[] = [];
 
-    // 1. Calculate realistic effective ratings
-    // User Rating: OVR + Chemistry Factor (max +1.0) + Coach Boosts (max +0.8)
+    // Realistic effective ratings calculation
     const userOvr = synergy.totalOvr;
     const chemBonus = ((synergy.teamChemistry - 80) / 20) * 1.0;
     const coachBonus = (((lineup.coach?.boostOffense || 0) + (lineup.coach?.boostDefense || 0)) / 8) * 0.8;
     const userPower = userOvr + chemBonus + coachBonus;
 
-    // Opponent Rating (NBA standard baseline)
-    const oppPower = oppOvr + 0.25;
-
-    // Net Difference in Power (e.g. 91 vs 96 -> -4.75 diff)
+    const oppPower = oppOvr + 0.2;
     const diff = userPower - oppPower;
 
     const quarterHighlights = [
@@ -272,20 +286,17 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
       await new Promise((r) => setTimeout(r, 600));
       await HapticsService.selectionTick();
 
-      // NBA realistic quarter base points (24 to 29 pts)
       const baseMy = Math.floor(Math.random() * 6) + 24;
       const baseOpp = Math.floor(Math.random() * 6) + 24;
 
-      // Realistic quarter differential: ~0.45 pts per 1.0 OVR difference
       const qMyAdvantage = Math.round(diff * 0.45);
-      const randomSwing = Math.floor(Math.random() * 5) - 2; // -2 to +2 swing
+      const randomSwing = Math.floor(Math.random() * 5) - 2;
 
       let qMy = baseMy + qMyAdvantage + randomSwing;
       let qOpp = baseOpp - qMyAdvantage - randomSwing;
 
-      // Keep quarters within realistic NBA boundaries (18 to 36 pts)
-      qMy = Math.max(18, Math.min(36, qMy));
-      qOpp = Math.max(18, Math.min(36, qOpp));
+      qMy = Math.max(18, Math.min(38, qMy));
+      qOpp = Math.max(18, Math.min(38, qOpp));
 
       curMy += qMy;
       curOpp += qOpp;
@@ -338,9 +349,9 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
       await HapticsService.packTearProgress(0.8);
     }
 
-    onCoinsEarned(coinsWon);
+    handleCoinsEarned(coinsWon);
 
-    // If it was a season game, update the standings table!
+    // Update season standings if league match
     if (isSeason && season) {
       const isSeasonEnd = season.currentMatchIndex >= (season.totalMatches || 30);
 
@@ -361,9 +372,8 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
             streak: won ? '1L' : '1W',
           };
         }
-        // Realistic simulation of other NBA teams in standings based on team strength
-        const oppTeamOvr = NBA_TEAM_OVR_MAP[team.teamAbbr] || 86;
-        const winProbability = Math.max(0.25, Math.min(0.85, 0.5 + (oppTeamOvr - 86) * 0.04));
+        const oppUnit = getFranchiseUnitInfo(team.teamAbbr, leagueDifficulty);
+        const winProbability = Math.max(0.25, Math.min(0.85, 0.5 + (oppUnit.ovr - 85) * 0.04));
         const teamWonRandom = Math.random() < winProbability;
         return {
           ...team,
@@ -378,13 +388,14 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
 
       const nextSeason: SeasonProgress = {
         ...season,
+        difficulty: leagueDifficulty,
         currentMatchIndex: Math.min(season.totalMatches || 30, season.currentMatchIndex + (isSeasonEnd ? 0 : 1)),
         standings: updatedStandings,
         isCompleted: isSeasonEnd,
         finalRank: isSeasonEnd ? finalUserRank : undefined,
         rewardClaimed: false,
         historyLogs: [
-          `Jornada ${season.currentMatchIndex}: Tu Equipo ${curMy} - ${curOpp} ${oppName} (${won ? 'VICTORIA' : 'DERROTA'})`,
+          `Jornada ${season.currentMatchIndex}: Tu Equipo ${curMy} - ${curOpp} ${oppName} [${oppSubtitle}] (${won ? 'VICTORIA' : 'DERROTA'})`,
           ...season.historyLogs,
         ],
       };
@@ -392,7 +403,6 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
       await StorageService.saveSeason(nextSeason);
       setSeason(nextSeason);
 
-      // If season reached match 30, prepare season awards!
       if (isSeasonEnd) {
         const rewardTier = getSeasonRewardTier(finalUserRank);
         setSeasonEndData({
@@ -412,10 +422,13 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
     await HapticsService.celebrate();
     SoundService.playVictory();
 
-    // Award bonus coins for season standing
-    onCoinsEarned(seasonEndData.reward.coins);
+    // If finished rank 1 (Championship Winner), record career achievement
+    if (seasonEndData.rank === 1) {
+      dispatch(recordSeasonWon());
+    }
 
-    // Advance to next season
+    handleCoinsEarned(seasonEndData.reward.coins);
+
     const advanced = await StorageService.advanceToNextSeason(season);
     setSeason(advanced);
     setSeasonEndModalVisible(false);
@@ -441,15 +454,12 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
     );
   };
 
-  // Sort Standings Table
   const getSortedStandings = () => {
     if (!season) return [];
     return sortStandingsList(season.standings, standingsConf);
   };
 
-  const selectedTeamData = NBA_TEAMS[selectedOpponentAbbr] || NBA_TEAMS.DEN;
-
-  // Next Season Opponent
+  // Next Season Opponent calculations
   const getNextSeasonOpponent = () => {
     const oppAbbrs = Object.keys(NBA_TEAMS);
     const index = ((season?.currentMatchIndex || 1) - 1) % oppAbbrs.length;
@@ -458,7 +468,12 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
   };
 
   const nextSeasonOpponent = getNextSeasonOpponent();
-  const nextSeasonOppOvr = getTeamOvrEstimate(nextSeasonOpponent.abbreviation);
+  const nextSeasonUnitInfo = getFranchiseUnitInfo(nextSeasonOpponent.abbreviation, leagueDifficulty);
+
+  // Quick Match Opponents
+  const selectedFranchise = NBA_TEAMS[selectedOpponentAbbr] || NBA_TEAMS.NYK;
+  const quickFranchiseUnit = getFranchiseUnitInfo(selectedFranchise.abbreviation, quickDifficulty);
+  const selectedClassicTeam = CLASSIC_TEAMS.find((t) => t.id === selectedClassicTeamId) || CLASSIC_TEAMS[0];
 
   return (
     <View style={styles.container}>
@@ -489,7 +504,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
           }}
           style={[styles.topTab, currentMode === 'QUICK' && styles.topTabActive]}
         >
-          <Ionicons name="flash" size={15} color={currentMode === 'QUICK' ? '#FFFFFF' : '#64748B'} style={{ marginRight: 6 }} />
+          <Ionicons name="flash" size={15} color={currentMode === 'QUICK' ? '#FFFFFF' : '#64748B'} style={{ marginRight: 5 }} />
           <Text
             style={[
               styles.topTabText,
@@ -503,12 +518,29 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
         <TouchableOpacity
           onPress={() => {
             HapticsService.selectionTick();
+            setCurrentMode('TRIPLES');
+          }}
+          style={[styles.topTab, currentMode === 'TRIPLES' && styles.topTabActiveTriples]}
+        >
+          <Ionicons name="flame" size={15} color={currentMode === 'TRIPLES' ? '#FFFFFF' : '#DC2626'} style={{ marginRight: 5 }} />
+          <Text
+            style={[
+              styles.topTabText,
+              currentMode === 'TRIPLES' && styles.topTabTextActive,
+            ]}
+          >
+            Triples 3PT
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            HapticsService.selectionTick();
             setInfoModalVisible(true);
           }}
           style={styles.infoTopBtn}
         >
-          <Ionicons name="information-circle-outline" size={15} color="#006BB6" style={{ marginRight: 4 }} />
-          <Text style={styles.infoTopBtnText}>Criterios</Text>
+          <Ionicons name="information-circle-outline" size={15} color="#006BB6" />
         </TouchableOpacity>
       </View>
 
@@ -537,6 +569,50 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                 >
                   <Ionicons name="refresh" size={14} color="#64748B" />
                 </TouchableOpacity>
+              </View>
+
+              {/* Dificultad Selector: Titulares (Difícil) vs Suplentes (Medio) */}
+              <View style={styles.difficultyPickerBox}>
+                <Text style={styles.difficultyPickerLabel}>NIVEL DE DIFICULTAD DE LA LIGA:</Text>
+                <View style={styles.difficultyButtonsRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleChangeLeagueDifficulty('HARD')}
+                    style={[
+                      styles.diffPill,
+                      leagueDifficulty === 'HARD' && styles.diffPillActiveHard,
+                    ]}
+                  >
+                    <Ionicons name="flame" size={13} color={leagueDifficulty === 'HARD' ? '#FFFFFF' : '#EF4444'} style={{ marginRight: 4 }} />
+                    <Text
+                      style={[
+                        styles.diffPillText,
+                        leagueDifficulty === 'HARD' && styles.diffPillTextActive,
+                      ]}
+                    >
+                      Titulares · Difícil
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleChangeLeagueDifficulty('MEDIUM')}
+                    style={[
+                      styles.diffPill,
+                      leagueDifficulty === 'MEDIUM' && styles.diffPillActiveMedium,
+                    ]}
+                  >
+                    <Ionicons name="flash" size={13} color={leagueDifficulty === 'MEDIUM' ? '#FFFFFF' : '#0284C7'} style={{ marginRight: 4 }} />
+                    <Text
+                      style={[
+                        styles.diffPillText,
+                        leagueDifficulty === 'MEDIUM' && styles.diffPillTextActive,
+                      ]}
+                    >
+                      Suplentes · Medio
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {season.isCompleted ? (
@@ -576,8 +652,21 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                       <Text numberOfLines={1} style={styles.teamBoxName}>
                         {nextSeasonOpponent.name}
                       </Text>
-                      <Text style={styles.teamBoxOvr}>{nextSeasonOppOvr} OVR</Text>
+                      <Text style={[styles.teamBoxOvr, { color: leagueDifficulty === 'HARD' ? '#EF4444' : '#0284C7' }]}>
+                        {nextSeasonUnitInfo.ovr} OVR
+                      </Text>
+                      <Text style={styles.unitTagSmall}>{nextSeasonUnitInfo.label}</Text>
                     </View>
+                  </View>
+
+                  {/* Rival Unit Player Lineup Preview */}
+                  <View style={styles.lineupPreviewBar}>
+                    <Text style={styles.lineupPreviewTitle}>
+                      {leagueDifficulty === 'HARD' ? '⭐ 5 TITULARES RIVALES:' : '⚡ 5 SUPLENTES RIVALES:'}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.lineupPreviewPlayers}>
+                      {nextSeasonUnitInfo.players.map((p) => `${p.name} (${p.stats.ovr})`).join(' · ')}
+                    </Text>
                   </View>
 
                   <TouchableOpacity
@@ -586,7 +675,8 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                       handleStartSimulation(
                         nextSeasonOpponent.name,
                         nextSeasonOpponent.logoUrl,
-                        nextSeasonOppOvr,
+                        nextSeasonUnitInfo.ovr,
+                        nextSeasonUnitInfo.label,
                         true
                       )
                     }
@@ -632,7 +722,6 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
 
             {/* Official NBA Standings Table */}
             <View style={styles.tableCard}>
-              {/* Table Header */}
               <View style={styles.tableHeaderRow}>
                 <Text style={[styles.thText, { width: 28 }]}>#</Text>
                 <Text style={[styles.thText, { flex: 1 }]}>EQUIPO</Text>
@@ -641,11 +730,9 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                 <Text style={[styles.thText, { width: 48, textAlign: 'center' }]}>%V</Text>
               </View>
 
-              {/* Table Rows */}
               {getSortedStandings().map((row, idx) => {
                 const totalGames = row.wins + row.losses;
                 const winPct = totalGames > 0 ? (row.wins / totalGames).toFixed(3).replace('0.', '.') : '.000';
-                const isPlayoffs = idx < 8;
 
                 return (
                   <View
@@ -694,15 +781,55 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
           </View>
         )}
 
-        {/* MODE 2: PARTIDO DE PRÁCTICA / EXHIBICIÓN */}
+        {/* MODE 2: PRÁCTICA & QUINTETOS HISTÓRICOS */}
         {currentMode === 'QUICK' && (
           <View>
-            <Text style={styles.sectionHeading}>ELEGIR RIVAL DE PRÁCTICA</Text>
-            <Text style={styles.sectionSub}>
-              Prueba la química de tus 5 jugadores y director técnico
-            </Text>
+            {/* Quick Match Sub-Tabs */}
+            <View style={styles.quickSubTabs}>
+              <TouchableOpacity
+                onPress={() => {
+                  HapticsService.selectionTick();
+                  setQuickCategory('FRANCHISES');
+                }}
+                style={[
+                  styles.quickSubTab,
+                  quickCategory === 'FRANCHISES' && styles.quickSubTabActive,
+                ]}
+              >
+                <Ionicons name="shield" size={14} color={quickCategory === 'FRANCHISES' ? '#FFFFFF' : '#64748B'} style={{ marginRight: 6 }} />
+                <Text
+                  style={[
+                    styles.quickSubTabText,
+                    quickCategory === 'FRANCHISES' && styles.quickSubTabTextActive,
+                  ]}
+                >
+                  Franquicias 2026-27
+                </Text>
+              </TouchableOpacity>
 
-            {/* Selected Opponent Hero Banner */}
+              <TouchableOpacity
+                onPress={() => {
+                  HapticsService.selectionTick();
+                  setQuickCategory('LEGENDS');
+                }}
+                style={[
+                  styles.quickSubTab,
+                  quickCategory === 'LEGENDS' && styles.quickSubTabActiveLegend,
+                ]}
+              >
+                <Ionicons name="sparkles" size={14} color={quickCategory === 'LEGENDS' ? '#713F12' : '#B45309'} style={{ marginRight: 6 }} />
+                <Text
+                  style={[
+                    styles.quickSubTabText,
+                    quickCategory === 'LEGENDS' && styles.quickSubTabTextActiveLegend,
+                  ]}
+                >
+                  Quintetos Míticos NBA 2K
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Selected Rival Hero Card */}
             <View style={styles.quickMatchCard}>
               <View style={styles.matchupBanner}>
                 <View style={styles.teamHeroBox}>
@@ -715,70 +842,263 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
 
                 <View style={styles.teamHeroBox}>
                   <Image
-                    source={{ uri: selectedTeamData.logoUrl }}
+                    source={{ uri: quickCategory === 'FRANCHISES' ? selectedFranchise.logoUrl : selectedClassicTeam.logoUrl }}
                     style={styles.heroRivalLogo}
                     resizeMode="contain"
                   />
                   <Text numberOfLines={1} style={styles.teamHeroName}>
-                    {selectedTeamData.name}
+                    {quickCategory === 'FRANCHISES' ? selectedFranchise.name : selectedClassicTeam.name}
                   </Text>
-                  <Text style={styles.teamHeroOvr}>
-                    {getTeamOvrEstimate(selectedTeamData.abbreviation)} OVR
+                  <Text style={[styles.teamHeroOvr, { color: quickCategory === 'LEGENDS' ? '#CA8A04' : '#0F172A' }]}>
+                    {quickCategory === 'FRANCHISES' ? quickFranchiseUnit.ovr : selectedClassicTeam.ovr} OVR
                   </Text>
                 </View>
+              </View>
+
+              {/* If Franchise mode, allow choosing Starters vs Bench */}
+              {quickCategory === 'FRANCHISES' && (
+                <View style={styles.quickUnitToggleRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      HapticsService.selectionTick();
+                      setQuickDifficulty('HARD');
+                    }}
+                    style={[
+                      styles.quickUnitPill,
+                      quickDifficulty === 'HARD' && styles.quickUnitPillActiveHard,
+                    ]}
+                  >
+                    <Text style={[styles.quickUnitText, quickDifficulty === 'HARD' && styles.quickUnitTextActive]}>
+                      Titulares (Difícil)
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      HapticsService.selectionTick();
+                      setQuickDifficulty('MEDIUM');
+                    }}
+                    style={[
+                      styles.quickUnitPill,
+                      quickDifficulty === 'MEDIUM' && styles.quickUnitPillActiveMed,
+                    ]}
+                  >
+                    <Text style={[styles.quickUnitText, quickDifficulty === 'MEDIUM' && styles.quickUnitTextActive]}>
+                      Suplentes (Medio)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Starters Preview */}
+              <View style={styles.quickStartersRow}>
+                <Text style={styles.quickStartersLabel}>
+                  {quickCategory === 'LEGENDS' ? 'QUINTETO TITULAR HISTÓRICO:' : `5 ${quickDifficulty === 'HARD' ? 'TITULARES' : 'SUPLENTES'}:`}
+                </Text>
+                <Text numberOfLines={2} style={styles.quickStartersText}>
+                  {quickCategory === 'LEGENDS'
+                    ? selectedClassicTeam.starters.map((p) => `${p.name} (${p.stats.ovr})`).join(' · ')
+                    : quickFranchiseUnit.players.map((p) => `${p.name} (${p.stats.ovr})`).join(' · ')}
+                </Text>
               </View>
 
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={() =>
                   handleStartSimulation(
-                    selectedTeamData.name,
-                    selectedTeamData.logoUrl,
-                    getTeamOvrEstimate(selectedTeamData.abbreviation),
+                    quickCategory === 'FRANCHISES' ? selectedFranchise.name : selectedClassicTeam.name,
+                    quickCategory === 'FRANCHISES' ? selectedFranchise.logoUrl : selectedClassicTeam.logoUrl,
+                    quickCategory === 'FRANCHISES' ? quickFranchiseUnit.ovr : selectedClassicTeam.ovr,
+                    quickCategory === 'FRANCHISES' ? quickFranchiseUnit.label : `Equipo Legendario ${selectedClassicTeam.year}`,
                     false
                   )
                 }
-                style={styles.startQuickMatchBtn}
+                style={[
+                  styles.startQuickMatchBtn,
+                  quickCategory === 'LEGENDS' && styles.startQuickMatchBtnLegend,
+                ]}
               >
-                <Ionicons name="play" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.startQuickMatchBtnText}>
-                  ¡SIMULAR PARTIDO DE PRÁCTICA!
+                <Ionicons name="play" size={16} color={quickCategory === 'LEGENDS' ? '#713F12' : '#FFFFFF'} style={{ marginRight: 6 }} />
+                <Text
+                  style={[
+                    styles.startQuickMatchBtnText,
+                    quickCategory === 'LEGENDS' && { color: '#713F12' },
+                  ]}
+                >
+                  {quickCategory === 'LEGENDS' ? '¡DESAFIAR QUINTETO MÍTICO!' : '¡SIMULAR PARTIDO DE PRÁCTICA!'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* 30 NBA Teams Grid */}
-            <Text style={styles.allTeamsHeading}>TODAS LAS FRANQUICIAS NBA</Text>
-            <View style={styles.teamsGrid}>
-              {teamsArray.map((team) => {
-                const isSelected = selectedOpponentAbbr === team.abbreviation;
-                const teamOvr = getTeamOvrEstimate(team.abbreviation);
+            {/* List Selection for FRANCHISES */}
+            {quickCategory === 'FRANCHISES' && (
+              <View>
+                <Text style={styles.allTeamsHeading}>TODAS LAS FRANQUICIAS NBA (2026-27)</Text>
+                <View style={styles.teamsGrid}>
+                  {teamsArray.map((team) => {
+                    const isSelected = selectedOpponentAbbr === team.abbreviation;
+                    const unit = getFranchiseUnitInfo(team.abbreviation, quickDifficulty);
 
-                return (
-                  <TouchableOpacity
-                    key={team.abbreviation}
-                    onPress={() => {
-                      HapticsService.selectionTick();
-                      setSelectedOpponentAbbr(team.abbreviation);
-                    }}
-                    style={[
-                      styles.teamGridCard,
-                      isSelected && styles.teamGridCardActive,
-                    ]}
-                  >
-                    <Image
-                      source={{ uri: team.logoUrl }}
-                      style={styles.teamGridLogo}
-                      resizeMode="contain"
-                    />
-                    <Text numberOfLines={1} style={styles.teamGridName}>
-                      {team.name}
-                    </Text>
-                    <Text style={styles.teamGridOvr}>{teamOvr} OVR</Text>
-                  </TouchableOpacity>
-                );
-              })}
+                    return (
+                      <TouchableOpacity
+                        key={team.abbreviation}
+                        onPress={() => {
+                          HapticsService.selectionTick();
+                          setSelectedOpponentAbbr(team.abbreviation);
+                        }}
+                        style={[
+                          styles.teamGridCard,
+                          isSelected && styles.teamGridCardActive,
+                        ]}
+                      >
+                        <Image
+                          source={{ uri: team.logoUrl }}
+                          style={styles.teamGridLogo}
+                          resizeMode="contain"
+                        />
+                        <Text numberOfLines={1} style={styles.teamGridName}>
+                          {team.name}
+                        </Text>
+                        <Text style={styles.teamGridOvr}>{unit.ovr} OVR</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* List Selection for LEGEND CLASSIC TEAMS */}
+            {quickCategory === 'LEGENDS' && (
+              <View>
+                <Text style={styles.allTeamsHeading}>QUINTETOS HISTÓRICOS & LEYENDAS NBA 2K</Text>
+                <View style={styles.classicTeamsGrid}>
+                  {CLASSIC_TEAMS.map((ct) => {
+                    const isSelected = selectedClassicTeamId === ct.id;
+
+                    return (
+                      <TouchableOpacity
+                        key={ct.id}
+                        activeOpacity={0.85}
+                        onPress={() => {
+                          HapticsService.selectionTick();
+                          setSelectedClassicTeamId(ct.id);
+                        }}
+                        style={[
+                          styles.classicTeamCard,
+                          isSelected && styles.classicTeamCardActive,
+                        ]}
+                      >
+                        <View style={styles.classicCardTop}>
+                          <Image
+                            source={{ uri: ct.logoUrl }}
+                            style={styles.classicTeamLogo}
+                            resizeMode="contain"
+                          />
+                          <View style={styles.classicMeta}>
+                            <Text numberOfLines={1} style={styles.classicTeamName}>
+                              {ct.name}
+                            </Text>
+                            <Text style={styles.classicTeamYear}>
+                              Año: {ct.year} · {ct.franchise}
+                            </Text>
+                          </View>
+                          <View style={styles.classicOvrBadge}>
+                            <Text style={styles.classicOvrVal}>{ct.ovr}</Text>
+                            <Text style={styles.classicOvrSub}>OVR</Text>
+                          </View>
+                        </View>
+
+                        <Text numberOfLines={2} style={styles.classicDesc}>
+                          {ct.description}
+                        </Text>
+
+                        <View style={styles.classicStartersPills}>
+                          {ct.starters.map((s, idx) => (
+                            <View key={idx} style={styles.classicStarterChip}>
+                              <Text numberOfLines={1} style={styles.classicStarterChipText}>
+                                {s.name.split(' ').pop()} {s.stats.ovr}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* MODE 3: CONCURSO DE TRIPLES ALL-STAR */}
+        {currentMode === 'TRIPLES' && (
+          <View style={styles.triplesHubCard}>
+            <View style={styles.triplesHubHeader}>
+              <View style={styles.triplesBadge}>
+                <Ionicons name="flame" size={14} color="#EF4444" style={{ marginRight: 4 }} />
+                <Text style={styles.triplesBadgeText}>MINIJUEGO ALL-STAR OFICIAL</Text>
+              </View>
+              <Text style={styles.triplesHubTitle}>Torneo de Triples 3PT Contest</Text>
+              <Text style={styles.triplesHubDesc}>
+                Pon a prueba la puntería de tus mejores francotiradores. Los tiradores se filtran y ordenan automáticamente de mayor a menor según su estadística de Triples (3PT).
+              </Text>
             </View>
+
+            {/* High score badge & specs */}
+            <View style={styles.triplesStatsBox}>
+              <View style={styles.triplesStatItem}>
+                <Ionicons name="trophy" size={26} color="#F59E0B" />
+                <Text style={styles.triplesStatLabel}>RÉCORD ACTUAL</Text>
+                <Text style={styles.triplesStatVal}>{contestRecord.score} PTS</Text>
+                <Text numberOfLines={1} style={styles.triplesStatSub}>
+                  {contestRecord.shooterName}
+                </Text>
+              </View>
+
+              <View style={styles.triplesStatDivider} />
+
+              <View style={styles.triplesStatItem}>
+                <Ionicons name="basketball" size={26} color="#EA580C" />
+                <Text style={styles.triplesStatLabel}>ESTRUCTURA</Text>
+                <Text style={styles.triplesStatVal}>5 RACKS</Text>
+                <Text style={styles.triplesStatSub}>25 Tiros · 30 Pts Max</Text>
+              </View>
+            </View>
+
+            {/* Feature points */}
+            <View style={styles.triplesFeaturesList}>
+              <View style={styles.triplesFeatureRow}>
+                <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8, marginTop: 1 }} />
+                <Text style={styles.triplesFeatureText}>
+                  <Text style={{ fontWeight: '800', color: '#0F172A' }}>Filtrado descendente:</Text> Selecciona entre tus cartas o leyendas All-Star ordenadas estrictamente por su atributo de 3PT.
+                </Text>
+              </View>
+              <View style={styles.triplesFeatureRow}>
+                <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8, marginTop: 1 }} />
+                <Text style={styles.triplesFeatureText}>
+                  <Text style={{ fontWeight: '800', color: '#0F172A' }}>Green Release:</Text> A mayor 3PT rating (ej. Curry 99, Klay 98), más amplia y generosa es la ventana verde.
+                </Text>
+              </View>
+              <View style={styles.triplesFeatureRow}>
+                <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8, marginTop: 1 }} />
+                <Text style={styles.triplesFeatureText}>
+                  <Text style={{ fontWeight: '800', color: '#0F172A' }}>Money Balls:</Text> El último balón de cada rack otorga 2 puntos bonus.
+                </Text>
+              </View>
+            </View>
+
+            {/* Big Launch Button */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                HapticsService.selectionTick();
+                setThreePointModalVisible(true);
+              }}
+              style={styles.launchTriplesBtn}
+            >
+              <Ionicons name="play-circle" size={22} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.launchTriplesBtnText}>PARTICIPAR EN EL CONCURSO DE TRIPLES</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -791,7 +1111,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
               <View style={styles.simHeaderTitleWrap}>
                 <Ionicons name="flash" size={18} color="#0284C7" style={{ marginRight: 6 }} />
                 <Text style={styles.simHeaderTitle}>
-                  {isSeasonMatch ? 'PARTIDO DE TEMPORADA' : 'PARTIDO DE PRÁCTICA'}
+                  {isSeasonMatch ? 'PARTIDO DE TEMPORADA' : 'PARTIDO DE EXHIBICIÓN'}
                 </Text>
               </View>
               {matchDone && (
@@ -878,7 +1198,6 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
           <View style={styles.seasonEndCard}>
             {seasonEndData && (
               <>
-                {/* Trophy / Medal Big Badge */}
                 <View
                   style={[
                     styles.seasonEndIconCircle,
@@ -888,7 +1207,6 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                   <Ionicon name={seasonEndData.reward.icon} size={38} color={seasonEndData.reward.color} />
                 </View>
 
-                {/* Badge Banner */}
                 <View
                   style={[
                     styles.seasonEndRankBadge,
@@ -900,7 +1218,6 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                   </Text>
                 </View>
 
-                {/* Main Title */}
                 <Text style={styles.seasonEndMainTitle}>
                   {seasonEndData.reward.title}
                 </Text>
@@ -909,7 +1226,6 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                   {seasonEndData.reward.description}
                 </Text>
 
-                {/* Season Summary Stats Box */}
                 <View style={styles.seasonStatsBox}>
                   <View style={styles.seasonStatItem}>
                     <Text style={styles.seasonStatLabel}>POSICIÓN</Text>
@@ -937,7 +1253,6 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                   </View>
                 </View>
 
-                {/* Coins Won Card */}
                 <View style={styles.seasonRewardCoinsCard}>
                   <Text style={styles.rewardCoinsLabel}>RECOMPENSA EXTRA DE TEMPORADA</Text>
                   <View style={styles.rewardCoinsRow}>
@@ -948,14 +1263,16 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                   </View>
                 </View>
 
-                {/* Claim Button */}
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={handleClaimSeasonReward}
-                  style={[styles.claimRewardBigBtn, { backgroundColor: seasonEndData.reward.color }]}
+                  style={[
+                    styles.claimRewardBigBtn,
+                    { backgroundColor: seasonEndData.reward.color },
+                  ]}
                 >
                   <Text style={styles.claimRewardBigBtnText}>
-                    RECLAMAR PREMIOS E INICIAR TEMPORADA #{seasonEndData.seasonNumber + 1}
+                    RECLAMAR PREMIOS E INICIAR SIGUIENTE TEMPORADA
                   </Text>
                 </TouchableOpacity>
               </>
@@ -964,73 +1281,60 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
         </View>
       </Modal>
 
-      {/* CRITERIOS DEL PARTIDO MODAL */}
+      {/* CRITERIA / RULES MODAL */}
       <Modal visible={infoModalVisible} transparent animationType="fade">
         <View style={styles.infoModalOverlay}>
           <View style={styles.infoModalCard}>
             <View style={styles.infoModalHeader}>
               <View style={styles.infoModalHeaderLeft}>
-                <Ionicons name="information-circle-outline" size={18} color="#006BB6" style={{ marginRight: 6 }} />
-                <Text style={styles.infoModalTitle}>¿CÓMO SE DECIDEN LOS PARTIDOS?</Text>
+                <Ionicons name="information-circle" size={20} color="#006BB6" />
+                <Text style={styles.infoModalTitle}>REGLAS Y DIFICULTAD NBA</Text>
               </View>
-              <TouchableOpacity onPress={() => setInfoModalVisible(false)} style={styles.closeInfoBtn}>
-                <Ionicons name="close" size={18} color="#64748B" />
+              <TouchableOpacity
+                onPress={() => setInfoModalVisible(false)}
+                style={styles.closeInfoBtn}
+              >
+                <Ionicons name="close" size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.infoScroll}>
+            <ScrollView style={styles.infoScroll}>
               <Text style={styles.infoIntro}>
-                El simulador calcula las anotaciones de cada cuarto en base a 4 pilares estratégicos de la NBA:
+                Ajusta la dificultad de la liga y pon a prueba a tu quinteto contra los mejores del mundo:
               </Text>
 
-              {/* Factor 1: OVR */}
               <View style={styles.infoCardItem}>
-                <View style={styles.infoIconBox}>
-                  <Ionicons name="shield" size={16} color="#006BB6" />
+                <View style={[styles.infoIconBox, { backgroundColor: '#FEE2E2' }]}>
+                  <Ionicons name="flame" size={18} color="#DC2626" />
                 </View>
                 <View style={styles.infoItemContent}>
-                  <Text style={styles.infoItemTitle}>1. OVR y Media General</Text>
+                  <Text style={styles.infoItemTitle}>Titulares · Difícil</Text>
                   <Text style={styles.infoItemText}>
-                    La calidad individual de tus 5 titulares determina la capacidad de anotación y contención defensiva. Cada punto de OVR diferencial te da una ventaja directa en puntos por cuarto.
+                    Enfrentas al Quinteto Titular de cada franquicia con sus máximas estrellas (Brunson, Tatum, Jokic, Doncic, etc.). OVRs elevados.
                   </Text>
                 </View>
               </View>
 
-              {/* Factor 2: Chemistry */}
-              <View style={styles.infoCardItem}>
-                <View style={[styles.infoIconBox, { backgroundColor: '#FEF9C3' }]}>
-                  <Ionicons name="flash" size={16} color="#CA8A04" />
-                </View>
-                <View style={styles.infoItemContent}>
-                  <Text style={styles.infoItemTitle}>2. Química de Equipo (%)</Text>
-                  <Text style={styles.infoItemText}>
-                    Una química alta (80%-100%) genera circulación fluida de balón y minimiza pérdidas. Una química baja (&lt;60%) causa tiros forzados en momentos apretados.
-                  </Text>
-                </View>
-              </View>
-
-              {/* Factor 3: Coach */}
               <View style={styles.infoCardItem}>
                 <View style={[styles.infoIconBox, { backgroundColor: '#EFF6FF' }]}>
-                  <Ionicons name="ribbon" size={16} color="#2563EB" />
+                  <Ionicons name="flash" size={18} color="#0284C7" />
                 </View>
                 <View style={styles.infoItemContent}>
-                  <Text style={styles.infoItemTitle}>3. Táctica del Director Técnico</Text>
+                  <Text style={styles.infoItemTitle}>Suplentes · Medio</Text>
                   <Text style={styles.infoItemText}>
-                    Los bonus tácticos (+ATQ / +DEF) de tu DT personalizado inclinan posesiones clave en los minutos decisivos.
+                    Enfrentas a la Segunda Unidad (Quinteto Suplente) de cada franquicia. Dificultad equilibrada para plantillas en desarrollo.
                   </Text>
                 </View>
               </View>
 
-              {/* Factor 4: NBA Variance */}
               <View style={styles.infoCardItem}>
-                <View style={[styles.infoIconBox, { backgroundColor: '#FFEDD5' }]}>
-                  <Ionicons name="flame" size={16} color="#EA580C" />
+                <View style={[styles.infoIconBox, { backgroundColor: '#FEF9C3' }]}>
+                  <Ionicons name="sparkles" size={18} color="#CA8A04" />
                 </View>
                 <View style={styles.infoItemContent}>
-                  <Text style={styles.infoItemTitle}>4. Rachas de Tiro y Varianza NBA</Text>
+                  <Text style={styles.infoItemTitle}>Quintetos Míticos & Iconos</Text>
                   <Text style={styles.infoItemText}>
-                    Como en la NBA real (ej. Playoffs), un equipo con 94 OVR puede tener un cuarto encendido de triples o tu equipo una racha fría. Sin embargo, un OVR de 98 te dará siempre una sólida probabilidad de victoria a lo largo de la temporada.
+                    En modo Práctica puedes desafiar a los Bulls '96 de Jordan, Lakers '01 de Shaq & Kobe, Warriors '17 de Curry y más leyendas.
                   </Text>
                 </View>
               </View>
@@ -1040,11 +1344,23 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
               onPress={() => setInfoModalVisible(false)}
               style={styles.understoodBtn}
             >
-              <Text style={styles.understoodBtnText}>¡ENTENDIDO!</Text>
+              <Text style={styles.understoodBtnText}>ENTENDIDO</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
+      {/* 3-POINT ALL-STAR CONTEST MINIGAME MODAL */}
+      <ThreePointContestScreen
+        visible={threePointModalVisible}
+        onClose={async () => {
+          setThreePointModalVisible(false);
+          const updatedRecord = await StorageService.getThreePointHighScore();
+          setContestRecord(updatedRecord);
+        }}
+        inventoryCards={cards}
+        onCoinsEarned={handleCoinsEarned}
+      />
     </View>
   );
 };
@@ -1056,46 +1372,159 @@ const styles = StyleSheet.create({
   },
   topTabs: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
+    alignItems: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    gap: 6,
-    alignItems: 'center',
+    gap: 8,
   },
   topTab: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 8,
     backgroundColor: '#F1F5F9',
-    gap: 5,
   },
   topTabActive: {
-    backgroundColor: '#006BB6',
+    backgroundColor: '#1D428A',
+  },
+  topTabActiveTriples: {
+    backgroundColor: '#DC2626',
   },
   topTabText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#64748B',
   },
   topTabTextActive: {
     color: '#FFFFFF',
   },
+  triplesHubCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  triplesHubHeader: {
+    marginBottom: 14,
+  },
+  triplesBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  triplesBadgeText: {
+    color: '#DC2626',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  triplesHubTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  triplesHubDesc: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  triplesStatsBox: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  triplesStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  triplesStatLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748B',
+    marginTop: 4,
+  },
+  triplesStatVal: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  triplesStatSub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#D97706',
+    marginTop: 1,
+  },
+  triplesStatDivider: {
+    width: 1,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 8,
+  },
+  triplesFeaturesList: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  triplesFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  triplesFeatureText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#475569',
+    lineHeight: 17,
+  },
+  launchTriplesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  launchTriplesBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
   infoTopBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    gap: 4,
+    marginLeft: 'auto',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   infoTopBtnText: {
     fontSize: 11,
@@ -1103,65 +1532,171 @@ const styles = StyleSheet.create({
     color: '#006BB6',
   },
   scrollContent: {
-    padding: 12,
-    paddingBottom: 30,
+    padding: 14,
+    paddingBottom: 40,
   },
-
-  // Fixture Card
   fixtureCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
   },
   fixtureHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingBottom: 8,
     marginBottom: 10,
   },
   fixtureHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    flex: 1,
   },
   fixtureTitle: {
-    fontSize: 11.5,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#0F172A',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   resetBtn: {
     padding: 4,
+  },
+  difficultyPickerBox: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 4,
-  },
-
-  // Season Completed Banner in Fixture Card
-  seasonCompletedCard: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 10,
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: '#E2E8F0',
   },
-  seasonCompletedIconWrap: {
+  difficultyPickerLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#64748B',
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+  difficultyButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  diffPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  diffPillActiveHard: {
+    backgroundColor: '#DC2626',
+    borderColor: '#B91C1C',
+  },
+  diffPillActiveMedium: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0369A1',
+  },
+  diffPillText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#475569',
+  },
+  diffPillTextActive: {
+    color: '#FFFFFF',
+  },
+  matchupRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+  teamBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  rivalLogo: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    marginBottom: 4,
+  },
+  teamBoxLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  teamBoxName: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  teamBoxOvr: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#006BB6',
+    marginTop: 2,
+  },
+  teamBoxChem: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#10B981',
+  },
+  unitTagSmall: {
+    fontSize: 8.5,
+    fontWeight: '700',
+    color: '#64748B',
+    marginTop: 1,
+  },
+  vsBadge: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#94A3B8',
+    paddingHorizontal: 8,
+  },
+  lineupPreviewBar: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  lineupPreviewTitle: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#475569',
+    marginBottom: 1,
+  },
+  lineupPreviewPlayers: {
+    fontSize: 9.5,
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  playSeasonBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1D428A',
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  playSeasonBtnText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  seasonCompletedCard: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  seasonCompletedIconWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#FEF3C7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1170,97 +1705,15 @@ const styles = StyleSheet.create({
   seasonCompletedTitle: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#92400E',
+    color: '#0F172A',
     marginBottom: 4,
-    textAlign: 'center',
   },
   seasonCompletedSub: {
-    fontSize: 11.5,
-    color: '#B45309',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  claimSeasonBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F59E0B',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 6,
-    width: '100%',
-  },
-  claimSeasonBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11.5,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-
-  matchupRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  teamBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  teamBoxLabel: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#006BB6',
-    marginBottom: 2,
-  },
-  teamBoxName: {
-    fontSize: 11.5,
-    fontWeight: 'bold',
-    color: '#0F172A',
-    marginBottom: 2,
+    color: '#64748B',
     textAlign: 'center',
+    paddingHorizontal: 12,
   },
-  teamBoxOvr: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#0F172A',
-  },
-  teamBoxChem: {
-    fontSize: 10,
-    color: '#16A34A',
-    fontWeight: 'bold',
-    marginTop: 2,
-  },
-  rivalLogo: {
-    width: 40,
-    height: 40,
-    marginBottom: 4,
-  },
-  vsBadge: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#94A3B8',
-    paddingHorizontal: 10,
-  },
-  playSeasonBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#006BB6',
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    gap: 6,
-  },
-  playSeasonBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-
-  // Standings Header
   standingsHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1268,9 +1721,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   standingsTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 11,
+    fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: 0.3,
   },
   confFilterPills: {
     flexDirection: 'row',
@@ -1278,67 +1732,64 @@ const styles = StyleSheet.create({
   },
   confPill: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#F1F5F9',
+    paddingVertical: 3,
+    borderRadius: 4,
+    backgroundColor: '#E2E8F0',
   },
   confPillActive: {
     backgroundColor: '#006BB6',
   },
   confPillText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#64748B',
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#475569',
   },
   confPillTextActive: {
     color: '#FFFFFF',
   },
-
-  // Table
   tableCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    overflow: 'hidden',
   },
   tableHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    paddingBottom: 6,
+    marginBottom: 4,
   },
   thText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     color: '#64748B',
   },
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
+    paddingVertical: 5,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#F1F5F9',
   },
   tableRowUser: {
     backgroundColor: '#EFF6FF',
+    borderRadius: 4,
   },
   playoffCutoffRow: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#BFDBFE',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#0284C7',
   },
   rankText: {
     width: 28,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#64748B',
   },
   userHighlightText: {
-    color: '#006BB6',
+    color: '#0284C7',
     fontWeight: '900',
   },
   teamCell: {
@@ -1352,164 +1803,305 @@ const styles = StyleSheet.create({
     height: 18,
   },
   tableTeamName: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
     color: '#0F172A',
-    flex: 1,
   },
   statCell: {
     width: 34,
-    fontSize: 11,
-    color: '#334155',
     textAlign: 'center',
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#0F172A',
   },
   pctCell: {
     width: 48,
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#0F172A',
     textAlign: 'center',
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#64748B',
   },
 
-  // Quick Practice Section
-  sectionHeading: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0F172A',
-    marginBottom: 2,
-  },
-  sectionSub: {
-    fontSize: 11.5,
-    color: '#64748B',
+  // Quick Match Styles
+  quickSubTabs: {
+    flexDirection: 'row',
+    gap: 8,
     marginBottom: 12,
+  },
+  quickSubTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  quickSubTabActive: {
+    backgroundColor: '#1D428A',
+    borderColor: '#1D428A',
+  },
+  quickSubTabActiveLegend: {
+    backgroundColor: '#FEF08A',
+    borderColor: '#CA8A04',
+  },
+  quickSubTabText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#64748B',
+  },
+  quickSubTabTextActive: {
+    color: '#FFFFFF',
+  },
+  quickSubTabTextActiveLegend: {
+    color: '#713F12',
+    fontWeight: '900',
   },
   quickMatchCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 14,
   },
   matchupBanner: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingVertical: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 12,
   },
   teamHeroBox: {
-    alignItems: 'center',
     flex: 1,
+    alignItems: 'center',
   },
   teamHeroLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#64748B',
-  },
-  teamHeroName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#0F172A',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  teamHeroOvr: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#006BB6',
-  },
-  teamHeroChem: {
-    fontSize: 10,
-    color: '#16A34A',
-    fontWeight: 'bold',
-    marginTop: 2,
   },
   heroRivalLogo: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     marginBottom: 4,
   },
+  teamHeroName: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  teamHeroOvr: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#006BB6',
+    marginTop: 2,
+  },
+  teamHeroChem: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#10B981',
+  },
   vsBadgeLarge: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '900',
     color: '#94A3B8',
     paddingHorizontal: 8,
+  },
+  quickUnitToggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  quickUnitPill: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  quickUnitPillActiveHard: {
+    backgroundColor: '#DC2626',
+    borderColor: '#B91C1C',
+  },
+  quickUnitPillActiveMed: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0369A1',
+  },
+  quickUnitText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#475569',
+  },
+  quickUnitTextActive: {
+    color: '#FFFFFF',
+  },
+  quickStartersRow: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 6,
+    padding: 8,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  quickStartersLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#475569',
+    marginBottom: 2,
+  },
+  quickStartersText: {
+    fontSize: 10,
+    color: '#0F172A',
+    fontWeight: '600',
+    lineHeight: 14,
   },
   startQuickMatchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#006BB6',
+    backgroundColor: '#0284C7',
     paddingVertical: 12,
     borderRadius: 8,
-    gap: 6,
+  },
+  startQuickMatchBtnLegend: {
+    backgroundColor: '#FEF08A',
+    borderColor: '#CA8A04',
+    borderWidth: 1.5,
   },
   startQuickMatchBtnText: {
-    fontSize: 13,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '900',
     color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   allTeamsHeading: {
-    fontSize: 12.5,
-    fontWeight: 'bold',
+    fontSize: 11,
+    fontWeight: '800',
     color: '#0F172A',
     marginBottom: 8,
-  },
-  quickSection: {
-    gap: 12,
-  },
-  quickOpponentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  quickCardTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#0F172A',
-    marginBottom: 8,
+    letterSpacing: 0.3,
   },
   teamsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    justifyContent: 'space-between',
+    gap: 8,
   },
   teamGridCard: {
     width: '31%',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     padding: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   teamGridCardActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#006BB6',
+    borderColor: '#0284C7',
     borderWidth: 2,
+    backgroundColor: '#EFF6FF',
   },
   teamGridLogo: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     marginBottom: 4,
   },
   teamGridName: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: 'bold',
     color: '#0F172A',
     textAlign: 'center',
   },
   teamGridOvr: {
-    fontSize: 9.5,
+    fontSize: 10,
+    fontWeight: '800',
     color: '#64748B',
+    marginTop: 2,
+  },
+
+  // Classic Teams Grid
+  classicTeamsGrid: {
+    gap: 10,
+  },
+  classicTeamCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  classicTeamCardActive: {
+    borderColor: '#CA8A04',
+    borderWidth: 2,
+    backgroundColor: '#FEFCE8',
+  },
+  classicCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  classicTeamLogo: {
+    width: 38,
+    height: 38,
+  },
+  classicMeta: {
+    flex: 1,
+  },
+  classicTeamName: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  classicTeamYear: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  classicOvrBadge: {
+    backgroundColor: '#FEF08A',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CA8A04',
+  },
+  classicOvrVal: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#713F12',
+  },
+  classicOvrSub: {
+    fontSize: 7,
+    fontWeight: '900',
+    color: '#854D0E',
+  },
+  classicDesc: {
+    fontSize: 10.5,
+    color: '#475569',
+    marginBottom: 8,
+    lineHeight: 14,
+  },
+  classicStartersPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  classicStarterChip: {
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  classicStarterChipText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#334155',
   },
 
   // Simulation Modal
@@ -1526,11 +2118,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 8,
   },
   simHeader: {
     flexDirection: 'row',
@@ -1541,10 +2128,9 @@ const styles = StyleSheet.create({
   simHeaderTitleWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
   },
   simHeaderTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#0F172A',
   },
@@ -1553,88 +2139,88 @@ const styles = StyleSheet.create({
   },
   simScoreboard: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingVertical: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 12,
   },
   simScoreTeam: {
-    alignItems: 'center',
     flex: 1,
+    alignItems: 'center',
   },
   simScoreTeamName: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: '#64748B',
-    marginBottom: 2,
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   simScoreNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#0F172A',
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FEF08A',
   },
   simScoreDivider: {
-    alignItems: 'center',
     paddingHorizontal: 8,
+    alignItems: 'center',
   },
   simStatusText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#0284C7',
+    fontWeight: '900',
+    color: '#38BDF8',
+    letterSpacing: 0.5,
   },
   simLogsContainer: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderRadius: 8,
     padding: 10,
-    gap: 4,
-    marginBottom: 14,
+    marginBottom: 12,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   simLogRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginVertical: 2,
   },
   simLogText: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#334155',
     flex: 1,
   },
   simDoneBox: {
     alignItems: 'center',
+    gap: 6,
   },
   simResultText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: '900',
   },
   simCoinsReward: {
-    fontSize: 12,
-    color: '#CA8A04',
+    fontSize: 11,
     fontWeight: 'bold',
-    marginBottom: 12,
+    color: '#CA8A04',
+    marginBottom: 6,
   },
   simContinueBtn: {
-    backgroundColor: '#16A34A',
-    paddingVertical: 12,
-    borderRadius: 6,
     width: '100%',
+    backgroundColor: '#1D428A',
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   simContinueBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
 
-  // Season End Awards Ceremony Modal
+  // Season End Modal
   seasonEndOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -1643,60 +2229,52 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 10,
   },
   seasonEndIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 3,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   seasonEndRankBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 6,
     marginBottom: 8,
   },
   seasonEndRankBadgeText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   seasonEndMainTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
     color: '#0F172A',
     textAlign: 'center',
     marginBottom: 4,
   },
   seasonEndDesc: {
-    fontSize: 11.5,
+    fontSize: 11,
     color: '#64748B',
     textAlign: 'center',
-    marginBottom: 14,
-    paddingHorizontal: 8,
+    marginBottom: 12,
   },
   seasonStatsBox: {
     flexDirection: 'row',
     width: '100%',
     backgroundColor: '#F8FAFC',
     borderRadius: 10,
-    paddingVertical: 10,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    justifyContent: 'space-around',
-    alignItems: 'center',
     marginBottom: 12,
   },
   seasonStatItem: {
@@ -1761,7 +2339,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Criterios Modal
+  // Info Modal
   infoModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.7)',

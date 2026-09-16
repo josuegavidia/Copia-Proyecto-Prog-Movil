@@ -9,23 +9,14 @@ import { PacksScreen } from '../screens/PacksScreen';
 import { GamesScreen } from '../screens/GamesScreen';
 import { CollectionScreen } from '../screens/CollectionScreen';
 import { CoachCreatorScreen } from '../screens/CoachCreatorScreen';
-import { useSquad } from '../context/SquadContext';
+import { useTranslation } from '../i18n/useTranslation';
 import { NBA_THEME } from '../theme/colors';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const TabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const {
-    lineup,
-    cards,
-    coins,
-    updateLineup,
-    addCards,
-    spendCoins,
-    earnCoins,
-    addCoach,
-  } = useSquad();
+  const { t } = useTranslation();
 
   return (
     <Tab.Navigator
@@ -42,7 +33,7 @@ export const TabNavigator: React.FC = () => {
           },
         ],
         tabBarLabelStyle: styles.tabBarLabel,
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'shield';
 
           if (route.name === 'Squad') {
@@ -63,72 +54,33 @@ export const TabNavigator: React.FC = () => {
     >
       <Tab.Screen
         name="Squad"
-        options={{ tabBarLabel: 'Quinteto' }}
-      >
-        {({ navigation }) => (
-          <SquadScreen
-            lineup={lineup}
-            inventory={cards}
-            onUpdateLineup={updateLineup}
-            onNavigateToCoachCreator={() => navigation.navigate('Coach')}
-            onCoinsEarned={earnCoins}
-          />
-        )}
-      </Tab.Screen>
+        component={SquadScreen}
+        options={{ tabBarLabel: t.navigation.squad }}
+      />
 
       <Tab.Screen
         name="Packs"
-        options={{ tabBarLabel: 'Sobres' }}
-      >
-        {() => (
-          <PacksScreen
-            coins={coins}
-            onPacksOpened={async (newCards, cost) => {
-              await addCards(newCards);
-              await spendCoins(cost);
-            }}
-          />
-        )}
-      </Tab.Screen>
+        component={PacksScreen}
+        options={{ tabBarLabel: t.navigation.packs }}
+      />
 
       <Tab.Screen
         name="Games"
-        options={{ tabBarLabel: 'Partidos' }}
-      >
-        {() => (
-          <GamesScreen
-            lineup={lineup}
-            onCoinsEarned={earnCoins}
-          />
-        )}
-      </Tab.Screen>
+        component={GamesScreen}
+        options={{ tabBarLabel: t.navigation.games }}
+      />
 
       <Tab.Screen
         name="Collection"
-        options={{ tabBarLabel: 'Colección' }}
-      >
-        {() => (
-          <CollectionScreen
-            cards={cards}
-            onRecycleDuplicates={earnCoins}
-          />
-        )}
-      </Tab.Screen>
+        component={CollectionScreen}
+        options={{ tabBarLabel: t.navigation.collection }}
+      />
 
       <Tab.Screen
         name="Coach"
-        options={{ tabBarLabel: 'Entrenador' }}
-      >
-        {() => (
-          <CoachCreatorScreen
-            currentCoach={lineup.coach}
-            onSaveCoach={addCoach}
-            onAssignToLineup={async (coach) => {
-              await updateLineup({ ...lineup, coach });
-            }}
-          />
-        )}
-      </Tab.Screen>
+        component={CoachCreatorScreen}
+        options={{ tabBarLabel: t.navigation.coach }}
+      />
     </Tab.Navigator>
   );
 };

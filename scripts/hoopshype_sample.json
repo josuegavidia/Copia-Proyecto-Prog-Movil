@@ -1,0 +1,1903 @@
+{
+  "device": false,
+  "nav": {
+    "dropdownNav": [
+      {
+        "name": "rumors",
+        "attributes": {
+          "display": "Rumors",
+          "url": "/rumors/"
+        },
+        "children": []
+      },
+      {
+        "name": "news-analysis",
+        "attributes": {
+          "display": "News & Analysis",
+          "url": "/news-analysis/"
+        },
+        "children": [
+          {
+            "name": "intel",
+            "attributes": {
+              "display": "Intel",
+              "url": "/news-analysis/intel/"
+            },
+            "children": []
+          },
+          {
+            "name": "free-agency",
+            "attributes": {
+              "display": "Free Agency",
+              "url": "/news-analysis/free-agency/"
+            },
+            "children": []
+          },
+          {
+            "name": "draft",
+            "attributes": {
+              "display": "Draft",
+              "url": "/news-analysis/draft/"
+            },
+            "children": []
+          },
+          {
+            "name": "interviews",
+            "attributes": {
+              "display": "Interviews",
+              "url": "/news-analysis/interviews/"
+            },
+            "children": []
+          },
+          {
+            "name": "nba-greats",
+            "attributes": {
+              "display": "NBA Greats",
+              "url": "/news-analysis/nba-greats/"
+            },
+            "children": []
+          },
+          {
+            "name": "data",
+            "attributes": {
+              "display": "Data",
+              "url": "/news-analysis/data/"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "salaries",
+        "attributes": {
+          "display": "Salaries",
+          "url": "/salaries/players/"
+        },
+        "children": []
+      },
+      {
+        "name": "player-rankings",
+        "attributes": {
+          "display": "Player Rankings",
+          "url": "/rankings/players/"
+        },
+        "children": []
+      },
+      {
+        "name": "nba-2k-rankings",
+        "attributes": {
+          "display": "NBA 2K Rankings",
+          "url": "/nba-2k/players/"
+        },
+        "children": []
+      },
+      {
+        "name": "free-agency",
+        "attributes": {
+          "display": "Free Agency",
+          "url": "/news-analysis/free-agency/"
+        },
+        "children": []
+      },
+      {
+        "name": "nba-scouting-report",
+        "attributes": {
+          "display": "Scouting Reports",
+          "url": "/nba-scouting-reports/players/",
+          "visibility": "DropDownOnly"
+        },
+        "children": []
+      },
+      {
+        "name": "usa-today-sports",
+        "attributes": {
+          "display": "USA TODAY Sports",
+          "url": "https://www.usatoday.com/sports/",
+          "type": "svg",
+          "icon": "external",
+          "visibility": "DropDownOnly"
+        },
+        "children": []
+      },
+      {
+        "name": "atlantic-salaries",
+        "attributes": {
+          "display": "Atlantic Salaries",
+          "visibility": "DropDownOnly"
+        },
+        "children": [
+          {
+            "name": "boston-celtics",
+            "attributes": {
+              "display": "Boston Celtics",
+              "url": "/salaries/teams/boston-celtics/2/"
+            },
+            "children": []
+          },
+          {
+            "name": "brooklyn-nets",
+            "attributes": {
+              "display": "Brooklyn Nets",
+              "url": "/salaries/teams/brooklyn-nets/17/"
+            },
+            "children": []
+          },
+          {
+            "name": "new-york-knicks",
+            "attributes": {
+              "display": "New York Knicks",
+              "url": "/salaries/teams/new-york-knicks/18/"
+            },
+            "children": []
+          },
+          {
+            "name": "philadelphia-76ers",
+            "attributes": {
+              "display": "Philadelphia 76ers",
+              "url": "/salaries/teams/philadelphia-76ers/20/"
+            },
+            "children": []
+          },
+          {
+            "name": "toronto-rapters",
+            "attributes": {
+              "display": "Toronto Rapters",
+              "url": "/salaries/teams/toronto-raptors/28/"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "central-salaries",
+        "attributes": {
+          "display": "Central Salaries",
+          "visibility": "DropDownOnly"
+        },
+        "children": [
+          {
+            "name": "chicago-bulls",
+            "attributes": {
+              "display": "Chicago Bulls",
+              "url": "/salaries/teams/chicago-bulls/4/"
+            },
+            "children": []
+          },
+          {
+            "name": "cleveland-cavaliers",
+            "attributes": {
+              "display": "Cleveland Cavaliers",
+              "url": "/salaries/teams/cleveland-cavaliers/5/"
+            },
+            "children": []
+          },
+          {
+            "name": "detroit-pistons",
+            "attributes": {
+              "display": "Detroit Pistons",
+              "url": "/salaries/teams/detroit-pistons/8/"
+            },
+            "children": []
+          },
+          {
+            "name": "indiana-pacers",
+            "attributes": {
+              "display": "Indiana Pacers",
+              "url": "/salaries/teams/indiana-pacers/11/"
+            },
+            "children": []
+          },
+          {
+            "name": "milwaukee-bucks",
+            "attributes": {
+              "display": "Milwaukee Bucks",
+              "url": "/salaries/teams/milwaukee-bucks/15/"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "southeast-salaries",
+        "attributes": {
+          "display": "Southeast Salaries",
+          "visibility": "DropDownOnly"
+        },
+        "children": [
+          {
+            "name": "atlanta-hawks",
+            "attributes": {
+              "display": "Atlanta Hawks",
+              "url": "/salaries/teams/atlanta-hawks/1/"
+            },
+            "children": []
+          },
+          {
+            "name": "charlotte-hornets",
+            "attributes": {
+              "display": "Charlotte Hornets",
+              "url": "/salaries/teams/charlotte-hornets/5312/"
+            },
+            "children": []
+          },
+          {
+            "name": "miami-heat",
+            "attributes": {
+              "display": "Miami Heat",
+              "url": "/salaries/teams/miami-heat/14/"
+            },
+            "children": []
+          },
+          {
+            "name": "orlando-magic",
+            "attributes": {
+              "display": "Orlando Magic",
+              "url": "/salaries/teams/orlando-magic/19/"
+            },
+            "children": []
+          },
+          {
+            "name": "washington-wizards",
+            "attributes": {
+              "display": "Washington Wizards",
+              "url": "/salaries/teams/washington-wizards/27/"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "northwest-salaries",
+        "attributes": {
+          "display": "Northwest Salaries",
+          "visibility": "DropDownOnly"
+        },
+        "children": [
+          {
+            "name": "denver-nuggets",
+            "attributes": {
+              "display": "Denver Nuggets",
+              "url": "/salaries/teams/denver-nuggets/7/"
+            },
+            "children": []
+          },
+          {
+            "name": "minnesota-timberwolves",
+            "attributes": {
+              "display": "Minnesota Timberwolves",
+              "url": "/salaries/teams/minnesota-timberwolves/16/"
+            },
+            "children": []
+          },
+          {
+            "name": "oklahoma-city-thunder",
+            "attributes": {
+              "display": "Oklahoma City Thunder",
+              "url": "/salaries/teams/oklahoma-city-thunder/25/"
+            },
+            "children": []
+          },
+          {
+            "name": "portland-trail-blazers",
+            "attributes": {
+              "display": "Portland Trail Blazers",
+              "url": "/salaries/teams/portland-trail-blazers/22/"
+            },
+            "children": []
+          },
+          {
+            "name": "utah-jazz",
+            "attributes": {
+              "display": "Utah Jazz",
+              "url": "/salaries/teams/utah-jazz/26/"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "pacific-salaries",
+        "attributes": {
+          "display": "Pacific Salaries",
+          "visibility": "DropDownOnly"
+        },
+        "children": [
+          {
+            "name": "golden-state-warriors",
+            "attributes": {
+              "display": "Golden State Warriors",
+              "url": "/salaries/teams/golden-state-warriors/9/"
+            },
+            "children": []
+          },
+          {
+            "name": "la-clippers",
+            "attributes": {
+              "display": "LA Clippers",
+              "url": "/salaries/teams/los-angeles-clippers/12/"
+            },
+            "children": []
+          },
+          {
+            "name": "los-angeles-lakers",
+            "attributes": {
+              "display": "Los Angeles Lakers",
+              "url": "/salaries/teams/los-angeles-lakers/13/"
+            },
+            "children": []
+          },
+          {
+            "name": "phoenix-suns",
+            "attributes": {
+              "display": "Phoenix Suns",
+              "url": "/salaries/teams/phoenix-suns/21/"
+            },
+            "children": []
+          },
+          {
+            "name": "sacramento-kings",
+            "attributes": {
+              "display": "Sacramento Kings",
+              "url": "/salaries/teams/sacramento-kings/23/"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "southwest-salaries",
+        "attributes": {
+          "display": "Southwest Salaries",
+          "visibility": "DropDownOnly"
+        },
+        "children": [
+          {
+            "name": "dallas-mavericks",
+            "attributes": {
+              "display": "Dallas Mavericks",
+              "url": "/salaries/teams/dallas-mavericks/6/"
+            },
+            "children": []
+          },
+          {
+            "name": "houston-rockets",
+            "attributes": {
+              "display": "Houston Rockets",
+              "url": "/salaries/teams/houston-rockets/10/"
+            },
+            "children": []
+          },
+          {
+            "name": "memphis-grizzlies",
+            "attributes": {
+              "display": "Memphis Grizzlies",
+              "url": "/salaries/teams/memphis-grizzlies/29/"
+            },
+            "children": []
+          },
+          {
+            "name": "new-orleans-pelicans",
+            "attributes": {
+              "display": "New Orleans Pelicans",
+              "url": "/salaries/teams/new-orleans-pelicans/3/"
+            },
+            "children": []
+          },
+          {
+            "name": "san-antonio-spurs",
+            "attributes": {
+              "display": "San Antonio Spurs",
+              "url": "/salaries/teams/san-antonio-spurs/24/"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "branded-story",
+        "attributes": {
+          "display": "Branded Stories Hub",
+          "url": "/branded-story/",
+          "visibility": "hidden"
+        },
+        "children": []
+      }
+    ],
+    "spreadNav": [
+      {
+        "name": "rumors",
+        "attributes": {
+          "display": "Rumors",
+          "url": "/rumors/"
+        },
+        "children": []
+      },
+      {
+        "name": "news-analysis",
+        "attributes": {
+          "display": "News & Analysis",
+          "url": "/news-analysis/"
+        },
+        "children": [
+          {
+            "name": "intel",
+            "attributes": {
+              "display": "Intel",
+              "url": "/news-analysis/intel/"
+            },
+            "children": []
+          },
+          {
+            "name": "free-agency",
+            "attributes": {
+              "display": "Free Agency",
+              "url": "/news-analysis/free-agency/"
+            },
+            "children": []
+          },
+          {
+            "name": "draft",
+            "attributes": {
+              "display": "Draft",
+              "url": "/news-analysis/draft/"
+            },
+            "children": []
+          },
+          {
+            "name": "interviews",
+            "attributes": {
+              "display": "Interviews",
+              "url": "/news-analysis/interviews/"
+            },
+            "children": []
+          },
+          {
+            "name": "nba-greats",
+            "attributes": {
+              "display": "NBA Greats",
+              "url": "/news-analysis/nba-greats/"
+            },
+            "children": []
+          },
+          {
+            "name": "data",
+            "attributes": {
+              "display": "Data",
+              "url": "/news-analysis/data/"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "salaries",
+        "attributes": {
+          "display": "Salaries",
+          "url": "/salaries/players/"
+        },
+        "children": []
+      },
+      {
+        "name": "player-rankings",
+        "attributes": {
+          "display": "Player Rankings",
+          "url": "/rankings/players/"
+        },
+        "children": []
+      },
+      {
+        "name": "nba-2k-rankings",
+        "attributes": {
+          "display": "NBA 2K Rankings",
+          "url": "/nba-2k/players/"
+        },
+        "children": []
+      },
+      {
+        "name": "free-agency",
+        "attributes": {
+          "display": "Free Agency",
+          "url": "/news-analysis/free-agency/"
+        },
+        "children": []
+      }
+    ]
+  },
+  "environment": {
+    "environment": "production",
+    "hostName": "www.hoopshype.com",
+    "resolvedUrl": "/nba-2k/players/?team=boston-celtics",
+    "sendPageView": true
+  },
+  "dehydratedState": {
+    "mutations": [],
+    "queries": [
+      {
+        "dehydratedAt": 1788667013903,
+        "state": {
+          "data": {
+            "__typename": "Query",
+            "videoGameRatings": {
+              "__typename": "SearchVideoGameRatings",
+              "videoGameRatings": [
+                {
+                  "__typename": "VideoGameRatings",
+                  "season": 2026,
+                  "videoGameID": "nba-2k27"
+                }
+              ]
+            }
+          },
+          "dataUpdateCount": 1,
+          "dataUpdatedAt": 1788667013805,
+          "error": null,
+          "errorUpdateCount": 0,
+          "errorUpdatedAt": 0,
+          "fetchFailureCount": 0,
+          "fetchFailureReason": null,
+          "fetchMeta": null,
+          "isInvalidated": false,
+          "status": "success",
+          "fetchStatus": "idle"
+        },
+        "queryKey": [
+          1,
+          "player",
+          "nba-2k",
+          "videoGamesSeason"
+        ],
+        "queryHash": "[1,\"player\",\"nba-2k\",\"videoGamesSeason\"]"
+      },
+      {
+        "dehydratedAt": 1788667013903,
+        "state": {
+          "data": {
+            "__typename": "Query",
+            "sportsMeta": {
+              "__typename": "SearchSportsmeta",
+              "numResults": 27,
+              "sportsMeta": [
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2026
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2025
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2024
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2023
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2022
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2021
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2020
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2019
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2018
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2017
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2016
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2015
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2014
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2013
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2012
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2011
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2010
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2009
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2008
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2007
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2006
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2005
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2004
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2003
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2002
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2001
+                },
+                {
+                  "__typename": "Sportsmeta",
+                  "defaults": {
+                    "__typename": "SportsmetaDefaults",
+                    "season": 2026
+                  },
+                  "season": 2000
+                }
+              ]
+            }
+          },
+          "dataUpdateCount": 1,
+          "dataUpdatedAt": 1788667013814,
+          "error": null,
+          "errorUpdateCount": 0,
+          "errorUpdatedAt": 0,
+          "fetchFailureCount": 0,
+          "fetchFailureReason": null,
+          "fetchMeta": null,
+          "isInvalidated": false,
+          "status": "success",
+          "fetchStatus": "idle"
+        },
+        "queryKey": [
+          "NBA"
+        ],
+        "queryHash": "[\"NBA\"]"
+      },
+      {
+        "dehydratedAt": 1788667013903,
+        "state": {
+          "data": {
+            "__typename": "Query",
+            "teams": {
+              "__typename": "SearchTeams",
+              "teams": [
+                {
+                  "__typename": "Teams",
+                  "teamName": "Atlanta Hawks",
+                  "id": "1",
+                  "location": "Atlanta",
+                  "nickname": "Hawks",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#E03A3E",
+                    "secondary": "#C1D32F"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/1.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/1a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Boston Celtics",
+                  "id": "2",
+                  "location": "Boston",
+                  "nickname": "Celtics",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#007A33",
+                    "secondary": "#BA9653"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/2.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/2a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Brooklyn Nets",
+                  "id": "17",
+                  "location": "Brooklyn",
+                  "nickname": "Nets",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#000000",
+                    "secondary": "#FFFFFF"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/17.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/17a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Charlotte Hornets",
+                  "id": "5312",
+                  "location": "Charlotte",
+                  "nickname": "Hornets",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#1D1160",
+                    "secondary": "#00788C"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/5312.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/5312a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Chicago Bulls",
+                  "id": "4",
+                  "location": "Chicago",
+                  "nickname": "Bulls",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#CE1141",
+                    "secondary": "#000000"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/4.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/4a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Cleveland Cavaliers",
+                  "id": "5",
+                  "location": "Cleveland",
+                  "nickname": "Cavaliers",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#860038",
+                    "secondary": "#041E42"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/5.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/5a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Dallas Mavericks",
+                  "id": "6",
+                  "location": "Dallas",
+                  "nickname": "Mavericks",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#00538C",
+                    "secondary": "#002B5E"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/6.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/6a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Denver Nuggets",
+                  "id": "7",
+                  "location": "Denver",
+                  "nickname": "Nuggets",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#0E2240",
+                    "secondary": "#FEC524"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/7.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/7a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Detroit Pistons",
+                  "id": "8",
+                  "location": "Detroit",
+                  "nickname": "Pistons",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#C8102E",
+                    "secondary": "#1D42BA"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/8.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/8a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Golden State Warriors",
+                  "id": "9",
+                  "location": "Golden State",
+                  "nickname": "Warriors",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#1D428A",
+                    "secondary": "#FFC72C"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/9.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/9a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Houston Rockets",
+                  "id": "10",
+                  "location": "Houston",
+                  "nickname": "Rockets",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#CE1141",
+                    "secondary": "#000000"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/10.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/10a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Indiana Pacers",
+                  "id": "11",
+                  "location": "Indiana",
+                  "nickname": "Pacers",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#002D62",
+                    "secondary": "#FDBB30"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/11.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/11a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Los Angeles Clippers",
+                  "id": "12",
+                  "location": "Los Angeles",
+                  "nickname": "Clippers",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#1D428A",
+                    "secondary": "#C8102E"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/12.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/12a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Los Angeles Lakers",
+                  "id": "13",
+                  "location": "Los Angeles",
+                  "nickname": "Lakers",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#552583",
+                    "secondary": "#FDB927"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/13.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/13a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Memphis Grizzlies",
+                  "id": "29",
+                  "location": "Memphis",
+                  "nickname": "Grizzlies",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#5D76A9",
+                    "secondary": "#12173F"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/29.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/29a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Miami Heat",
+                  "id": "14",
+                  "location": "Miami",
+                  "nickname": "Heat",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#98002E",
+                    "secondary": "#F9A01B"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/14.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/14a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Milwaukee Bucks",
+                  "id": "15",
+                  "location": "Milwaukee",
+                  "nickname": "Bucks",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#00471B",
+                    "secondary": "#EEE1C6"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/15.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/15a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Minnesota Timberwolves",
+                  "id": "16",
+                  "location": "Minnesota",
+                  "nickname": "Timberwolves",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#0C2340",
+                    "secondary": "#236192"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/16.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/16a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "New Orleans Pelicans",
+                  "id": "3",
+                  "location": "New Orleans",
+                  "nickname": "Pelicans",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#0C2340",
+                    "secondary": "#C8102E"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/3.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/3a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "New York Knicks",
+                  "id": "18",
+                  "location": "New York",
+                  "nickname": "Knicks",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#006BB6",
+                    "secondary": "#F58426"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/18.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/18a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Oklahoma City Thunder",
+                  "id": "25",
+                  "location": "Oklahoma City",
+                  "nickname": "Thunder",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#007AC1",
+                    "secondary": "#EF3B24"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/25.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/25a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Orlando Magic",
+                  "id": "19",
+                  "location": "Orlando",
+                  "nickname": "Magic",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#0077C0",
+                    "secondary": "#C4CED4"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/19.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/19a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Philadelphia 76ers",
+                  "id": "20",
+                  "location": "Philadelphia",
+                  "nickname": "76ers",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#006BB6",
+                    "secondary": "#ED174C"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/20.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/20a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Phoenix Suns",
+                  "id": "21",
+                  "location": "Phoenix",
+                  "nickname": "Suns",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#1D1160",
+                    "secondary": "#E56020"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/21.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/21a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Portland Trail Blazers",
+                  "id": "22",
+                  "location": "Portland",
+                  "nickname": "Trail Blazers",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#E03A3E",
+                    "secondary": "#000000"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/22.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/22a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Sacramento Kings",
+                  "id": "23",
+                  "location": "Sacramento",
+                  "nickname": "Kings",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#5A2D81",
+                    "secondary": "#63727A"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/23.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/23a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "San Antonio Spurs",
+                  "id": "24",
+                  "location": "San Antonio",
+                  "nickname": "Spurs",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#C4CED4",
+                    "secondary": "#000000"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/24.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/24a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Team World",
+                  "id": "45692",
+                  "location": "Team",
+                  "nickname": "World",
+                  "isAllStar": true,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "",
+                    "secondary": ""
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/45692.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/45692a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Toronto Raptors",
+                  "id": "28",
+                  "location": "Toronto",
+                  "nickname": "Raptors",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#CE1141",
+                    "secondary": "#000000"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/28.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/28a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "USA Stripes",
+                  "id": "45690",
+                  "location": "USA",
+                  "nickname": "Stripes",
+                  "isAllStar": true,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "",
+                    "secondary": ""
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/45690.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/45690a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "USA Stars",
+                  "id": "45691",
+                  "location": "USA",
+                  "nickname": "Stars",
+                  "isAllStar": true,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "",
+                    "secondary": ""
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/45691.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/45691a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Utah Jazz",
+                  "id": "26",
+                  "location": "Utah",
+                  "nickname": "Jazz",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#000000",
+                    "secondary": "#4E008E"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/26.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/26a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                },
+                {
+                  "__typename": "Teams",
+                  "teamName": "Washington Wizards",
+                  "id": "27",
+                  "location": "Washington",
+                  "nickname": "Wizards",
+                  "isAllStar": false,
+                  "colors": {
+                    "__typename": "TeamsColors",
+                    "primary": "#002B5C",
+                    "secondary": "#E31837"
+                  },
+                  "logo": {
+                    "__typename": "TeamsLogo",
+                    "url": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/27.png",
+                    "alternateURL": "https://www.gannett-cdn.com/content-pipeline-sports-images/sports2/nba/logos/27a.png"
+                  },
+                  "season": {
+                    "__typename": "Season",
+                    "year": 2026
+                  }
+                }
+              ]
+            }
+          },
+          "dataUpdateCount": 1,
+          "dataUpdatedAt": 1788667013866,
+          "error": null,
+          "errorUpdateCount": 0,
+          "errorUpdatedAt": 0,
+          "fetchFailureCount": 0,
+          "fetchFailureReason": null,
+          "fetchMeta": null,
+          "isInvalidated": false,
+          "status": "success",
+          "fetchStatus": "idle"
+        },
+        "queryKey": [
+          "NBA",
+          2026,
+          "teamsOnNba2kPlayerTab"
+        ],
+        "queryHash": "[\"NBA\",2026,\"teamsOnNba2kPlayerTab\"]"
+      },
+      {
+        "dehydratedAt": 1788667013903,
+        "state": {
+          "data": {
+            "__typename": "Query",
+            "rosters": {
+              "__typename": "SearchRosters",
+              "rosters": [
+                {
+                  "__typename": "Rosters",
+                  "team": {
+                    "__typename": "RostersTeam",
+                    "id": "2"
+                  },
+                  "players": [
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "937647",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "937647",
+                        "firstName": "Jayson",
+                        "lastName": "Tatum",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 93
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "796009",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "796009",
+                        "firstName": "Derrick",
+                        "lastName": "White",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 83
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "469218",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "469218",
+                        "firstName": "Paul",
+                        "lastName": "George",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 82
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "945610",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "945610",
+                        "firstName": "Payton",
+                        "lastName": "Pritchard",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 82
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1076265",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1076265",
+                        "firstName": "Mitchell",
+                        "lastName": "Robinson",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 80
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1142902",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1142902",
+                        "firstName": "Neemias",
+                        "lastName": "Queta",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 80
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "922378",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "922378",
+                        "firstName": "Sam",
+                        "lastName": "Hauser",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 76
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "329468",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "329468",
+                        "firstName": "Mike",
+                        "lastName": "Conley",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 75
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1061057",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1061057",
+                        "firstName": "Luka",
+                        "lastName": "Garza",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 75
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1177129",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1177129",
+                        "firstName": "Baylor",
+                        "lastName": "Scheierman",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 75
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1590553",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1590553",
+                        "firstName": "Hugo",
+                        "lastName": "Gonzalez",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 75
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1401388",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1401388",
+                        "firstName": "Jordan",
+                        "lastName": "Walsh",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 74
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1133934",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1133934",
+                        "firstName": "Ron",
+                        "lastName": "Harper Jr.",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 71
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1593958",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1593958",
+                        "firstName": "Christopher",
+                        "lastName": "Cenac Jr.",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 71
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1232028",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1232028",
+                        "firstName": "Amari",
+                        "lastName": "Williams",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 69
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1408158",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1408158",
+                        "firstName": "Dillon",
+                        "lastName": "Mitchell",
+                        "videoGameRatings": {
+                          "__typename": "VideoGameRatings",
+                          "rating": 68
+                        }
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1340218",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1340218",
+                        "firstName": "Tucker",
+                        "lastName": "DeVries",
+                        "videoGameRatings": null
+                      }
+                    },
+                    {
+                      "__typename": "RostersPlayers",
+                      "id": "1405418",
+                      "fullPlayer": {
+                        "__typename": "Players",
+                        "id": "1405418",
+                        "firstName": "Milos",
+                        "lastName": "Uzan",
+                        "videoGameRatings": null
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "dataUpdateCount": 1,
+          "dataUpdatedAt": 1788667013903,
+          "error": null,
+          "errorUpdateCount": 0,
+          "errorUpdatedAt": 0,
+          "fetchFailureCount": 0,
+          "fetchFailureReason": null,
+          "fetchMeta": null,
+          "isInvalidated": false,
+          "status": "success",
+          "fetchStatus": "idle"
+        },
+        "queryKey": [
+          "NBA",
+          2026,
+          "2"
+        ],
+        "queryHash": "[\"NBA\",2026,\"2\"]"
+      }
+    ]
+  },
+  "initialReduxState": {
+    "page": {
+      "seo": {
+        "title": "NBA 2K Ratings & Player Rankings | HoopsHype",
+        "description": "Check out the latest NBA 2K ratings, player rankings, and comparisons for every team.",
+        "canonical": "https://www.hoopshype.com/nba-2k/players/?team=boston-celtics"
+      }
+    },
+    "variables": {
+      "league": "NBA",
+      "season": 2026,
+      "seasons": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017,
+        2016,
+        2015,
+        2014,
+        2013,
+        2012,
+        2011,
+        2010,
+        2009,
+        2008,
+        2007,
+        2006,
+        2005,
+        2004,
+        2003,
+        2002,
+        2001,
+        2000,
+        1999
+      ],
+      "teamId": "2"
+    }
+  }
+}

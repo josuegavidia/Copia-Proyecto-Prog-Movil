@@ -24,14 +24,25 @@ import {
   validateText,
   validateRequired,
 } from '../utils/validators';
+import { useAppDispatch } from '../store/hooks';
+import { setAuthSuccess } from '../store/slices/squadSlice';
 
 interface AuthScreenProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess?: () => void;
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   onAuthSuccess,
 }) => {
+  const dispatch = useAppDispatch();
+  const handleAuthSuccess = () => {
+    if (onAuthSuccess) {
+      onAuthSuccess();
+    } else {
+      dispatch(setAuthSuccess());
+    }
+  };
+
   const insets = useSafeAreaInsets();
   const [isLoginMode, setIsLoginMode] = useState(true);
 
@@ -156,11 +167,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       if (isLoginMode) {
         await AuthService.signIn(email.trim(), password);
         await HapticsService.celebrate();
-        onAuthSuccess();
+        handleAuthSuccess();
       } else {
         await AuthService.signUp(email.trim(), password, username.trim());
         await HapticsService.celebrate();
-        onAuthSuccess();
+        handleAuthSuccess();
       }
     } catch (e: any) {
       setGeneralError(e.message || 'Ocurrió un error inesperado');
