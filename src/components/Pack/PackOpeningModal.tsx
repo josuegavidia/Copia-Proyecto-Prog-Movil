@@ -344,7 +344,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                   }}
                   style={styles.summaryCardSlot}
                 >
-                  <NBACard player={card.player} size="md" />
+                  <NBACard player={card.player} size="md" width={140} />
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -601,10 +601,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   summaryCardsScroll: {
-    paddingVertical: 6,
-    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    gap: 10,
+    alignItems: 'center',
   },
   summaryCardSlot: {
-    marginRight: 8,
+    width: 140,
+    height: 224,
   },
 });

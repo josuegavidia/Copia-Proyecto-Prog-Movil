@@ -8,10 +8,12 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthService } from '../services/auth';
+import { StorageService } from '../services/storage';
 import { SyncService } from '../services/sync';
 import { HapticsService } from '../services/haptics';
 import { NBA_THEME } from '../theme/colors';
@@ -165,17 +167,69 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
     try {
       if (isLoginMode) {
-        await AuthService.signIn(email.trim(), password);
+        const session = await AuthService.signIn(email.trim(), password);
+        if (session?.user) {
+          StorageService.setActiveUser(session.user.id);
+          await StorageService.initApp(session.user.id);
+          await AuthService.ensureProfileExists(session.user);
+          await SyncService.pullCloudToLocal().catch(() => {});
+        }
         await HapticsService.celebrate();
         handleAuthSuccess();
       } else {
-        await AuthService.signUp(email.trim(), password, username.trim());
+        const session = await AuthService.signUp(email.trim(), password, username.trim());
+        if (session?.user) {
+          StorageService.setActiveUser(session.user.id);
+          await StorageService.initApp(session.user.id);
+          await AuthService.ensureProfileExists(session.user);
+          await SyncService.pullCloudToLocal().catch(() => {});
+        }
         await HapticsService.celebrate();
         handleAuthSuccess();
       }
     } catch (e: any) {
       setGeneralError(e.message || 'Ocurrió un error inesperado');
       await HapticsService.errorNotification();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialAuth = async (provider: 'google' | 'apple' | 'facebook') => {
+    setLoading(true);
+    setGeneralError(null);
+    await HapticsService.mediumImpact();
+
+    try {
+      const session = await AuthService.signInWithOAuth(provider);
+      if (session?.user) {
+        StorageService.setActiveUser(session.user.id);
+        await StorageService.initApp(session.user.id);
+        await AuthService.ensureProfileExists(session.user);
+        await SyncService.pullCloudToLocal().catch(() => {});
+      }
+      await HapticsService.celebrate();
+      handleAuthSuccess();
+    } catch (e: any) {
+      if (e?.message !== 'Inicio de sesión cancelado.') {
+        setGeneralError(e?.message || `No se pudo iniciar sesión con ${provider}`);
+        await HapticsService.errorNotification();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    await HapticsService.selectionTick();
+    try {
+      await AuthService.setGuestMode(true);
+      StorageService.setActiveUser('guest');
+      await StorageService.initApp('guest');
+      handleAuthSuccess();
+    } catch (e: any) {
+      setGeneralError('No se pudo entrar en modo invitado');
     } finally {
       setLoading(false);
     }
@@ -346,6 +400,57 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               fullWidth
               style={styles.submitBtn}
             />
+
+            {/* Separador Social */}
+            <View style={styles.socialDividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>O INICIA SESIÓN CON</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Botones de Social Login (Google, Apple, Facebook) */}
+            <View style={styles.socialButtonsGrid}>
+              <TouchableOpacity
+                style={[styles.socialBtn, { borderColor: '#EA4335' }]}
+                onPress={() => handleSocialAuth('google')}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Ionicons name="logo-google" size={18} color="#EA4335" />
+                <Text style={[styles.socialBtnText, { color: '#EA4335' }]}>Google</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.socialBtn, { borderColor: '#000000' }]}
+                onPress={() => handleSocialAuth('apple')}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Ionicons name="logo-apple" size={18} color="#000000" />
+                <Text style={[styles.socialBtnText, { color: '#000000' }]}>Apple</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.socialBtn, { borderColor: '#1877F2' }]}
+                onPress={() => handleSocialAuth('facebook')}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Ionicons name="logo-facebook" size={18} color="#1877F2" />
+                <Text style={[styles.socialBtnText, { color: '#1877F2' }]}>Facebook</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Botón Acceso Invitado */}
+            <TouchableOpacity
+              style={styles.guestButton}
+              onPress={handleGuestLogin}
+              activeOpacity={0.7}
+              disabled={loading}
+            >
+              <Ionicons name="person-circle-outline" size={16} color="#64748B" />
+              <Text style={styles.guestButtonText}>Continuar como Invitado (Modo Local)</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -453,14 +558,57 @@ const styles = StyleSheet.create({
   submitBtn: {
     marginTop: 4,
   },
-  guestSection: {
+  socialDividerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 22,
-    gap: 8,
+    marginVertical: 16,
+    gap: 10,
   },
-  guestHint: {
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  dividerText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  socialButtonsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  socialBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  socialBtnText: {
     fontSize: 12,
+    fontWeight: '700',
+  },
+  guestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  guestButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: '#64748B',
-    textAlign: 'center',
   },
 });

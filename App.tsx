@@ -4,8 +4,27 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { store } from './src/store';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { AuthProvider } from './src/context/AuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { LoadingScreen } from './src/screens/LoadingScreen';
+
+// Root app wrapper consuming theme context for StatusBar and background styling
+const MainApp: React.FC = () => {
+  const { isDark, colors } = useTheme();
+
+  return (
+    <>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.bg}
+      />
+      <NavigationContainer>
+        <AppNavigator />
+      </NavigationContainer>
+    </>
+  );
+};
 
 export default function App() {
   const [appLoading, setAppLoading] = useState(true);
@@ -16,11 +35,12 @@ export default function App() {
 
   return (
     <SafeAreaProvider style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
       <Provider store={store}>
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
+        <ThemeProvider>
+          <AuthProvider>
+            <MainApp />
+          </AuthProvider>
+        </ThemeProvider>
       </Provider>
     </SafeAreaProvider>
   );
@@ -29,6 +49,5 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
 });

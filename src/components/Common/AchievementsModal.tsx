@@ -18,6 +18,7 @@ import { HapticsService } from '../../services/haptics';
 import { SoundService } from '../../services/sound';
 import { NBA_THEME } from '../../theme/colors';
 import { CustomBadge } from './CustomBadge';
+import { useTheme } from '../../context/ThemeContext';
 
 interface AchievementsModalProps {
   visible: boolean;
@@ -28,6 +29,7 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
   visible,
   onClose,
 }) => {
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const { t, language } = useTranslation();
@@ -82,14 +84,24 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
     return (
       <TouchableOpacity
         key={cat}
-        style={[styles.categoryTab, isSelected && styles.categoryTabActive]}
+        style={[
+          styles.categoryTab,
+          { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' },
+          isSelected && styles.categoryTabActive,
+        ]}
         onPress={async () => {
           await HapticsService.selectionTick();
           setSelectedCategory(cat);
         }}
         activeOpacity={0.7}
       >
-        <Text style={[styles.categoryTabText, isSelected && styles.categoryTabTextActive]}>
+        <Text
+          style={[
+            styles.categoryTabText,
+            { color: isDark ? colors.textMuted : '#64748B' },
+            isSelected && styles.categoryTabTextActive,
+          ]}
+        >
           {label}
         </Text>
       </TouchableOpacity>
@@ -101,12 +113,23 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
     const description = item.definition.description[language] || item.definition.description.es;
     const canClaim = item.isUnlocked && !item.isClaimed;
 
+    const cardBg = isDark
+      ? (item.isUnlocked ? '#1E293B' : '#141B29')
+      : (item.isUnlocked ? '#FFFDF7' : '#FFFFFF');
+
+    const cardBorder = isDark
+      ? (item.isUnlocked ? (item.isClaimed ? '#334155' : '#D97706') : '#1E293B')
+      : (item.isUnlocked ? (item.isClaimed ? '#E2E8F0' : '#FDE68A') : '#E2E8F0');
+
     return (
       <View
         style={[
           styles.card,
-          item.isUnlocked && styles.cardUnlocked,
-          item.isClaimed && styles.cardClaimed,
+          {
+            backgroundColor: cardBg,
+            borderColor: cardBorder,
+          },
+          item.isClaimed && { opacity: 0.85 },
         ]}
       >
         {/* Top Info Row */}
@@ -115,13 +138,13 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
           <View
             style={[
               styles.iconCircle,
-              { backgroundColor: item.isUnlocked ? `${item.definition.iconColor}20` : '#F1F5F9' },
+              { backgroundColor: item.isUnlocked ? `${item.definition.iconColor}20` : (isDark ? '#0F172A' : '#F1F5F9') },
             ]}
           >
             <Ionicons
               name={item.definition.iconName as any}
               size={22}
-              color={item.isUnlocked ? item.definition.iconColor : '#94A3B8'}
+              color={item.isUnlocked ? item.definition.iconColor : colors.textMuted}
             />
           </View>
 
@@ -131,7 +154,7 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
               <Text
                 style={[
                   styles.cardTitle,
-                  item.isUnlocked ? styles.cardTitleUnlocked : styles.cardTitleLocked,
+                  { color: isDark ? '#FFFFFF' : '#0F172A' },
                 ]}
                 numberOfLines={1}
               >
@@ -146,7 +169,7 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
               )}
             </View>
 
-            <Text style={styles.cardDescription} numberOfLines={2}>
+            <Text style={[styles.cardDescription, { color: colors.textMuted }]} numberOfLines={2}>
               {description}
             </Text>
           </View>
@@ -154,7 +177,7 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
 
         {/* Progress Bar Row */}
         <View style={styles.progressContainer}>
-          <View style={styles.progressBarBackground}>
+          <View style={[styles.progressBarBackground, { backgroundColor: isDark ? '#0F172A' : '#F1F5F9' }]}>
             <View
               style={[
                 styles.progressBarFill,
@@ -164,12 +187,12 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
                     ? '#10B981'
                     : item.isUnlocked
                     ? '#F59E0B'
-                    : NBA_THEME.nbaNavy,
+                    : '#0284C7',
                 },
               ]}
             />
           </View>
-          <Text style={styles.progressText}>
+          <Text style={[styles.progressText, { color: colors.textMuted }]}>
             {item.current} / {item.target} ({item.progressPct}%)
           </Text>
         </View>
@@ -177,9 +200,9 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
         {/* Action / Status Footer */}
         <View style={styles.cardFooter}>
           {/* Reward Amount Info */}
-          <View style={styles.rewardBadge}>
+          <View style={[styles.rewardBadge, { backgroundColor: isDark ? '#78350F33' : '#FEF3C7' }]}>
             <Ionicons name="cash-outline" size={14} color="#D97706" />
-            <Text style={styles.rewardText}>
+            <Text style={[styles.rewardText, { color: isDark ? '#FDE047' : '#D97706' }]}>
               +{item.definition.rewardCoins.toLocaleString()} {t.common.coins}
             </Text>
           </View>
@@ -200,9 +223,9 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
               <Text style={styles.claimedText}>{t.achievements.rewardClaimed}</Text>
             </View>
           ) : (
-            <View style={styles.lockedBadge}>
-              <Ionicons name="lock-closed-outline" size={13} color="#94A3B8" />
-              <Text style={styles.lockedText}>{t.common.locked}</Text>
+            <View style={[styles.lockedBadge, { backgroundColor: isDark ? '#0F172A' : '#F1F5F9' }]}>
+              <Ionicons name="lock-closed-outline" size={13} color={colors.textMuted} />
+              <Text style={[styles.lockedText, { color: colors.textMuted }]}>{t.common.locked}</Text>
             </View>
           )}
         </View>
@@ -218,16 +241,16 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={[styles.modalContainer, { paddingTop: Math.max(insets.top, 16) }]}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.bg, paddingTop: Math.max(insets.top, 16) }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
             <View style={styles.headerLeft}>
-              <View style={styles.trophyIconBox}>
+              <View style={[styles.trophyIconBox, isDark && { backgroundColor: '#78350F33', borderColor: '#B45309' }]}>
                 <Ionicons name="trophy" size={20} color="#F59E0B" />
               </View>
               <View>
-                <Text style={styles.headerTitle}>{t.achievements.modalTitle}</Text>
-                <Text style={styles.headerSubtitle}>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>{t.achievements.modalTitle}</Text>
+                <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
                   {unlockedCount} / {totalCount} {t.achievements.unlockedTrophies}
                 </Text>
               </View>
@@ -238,17 +261,17 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
               style={styles.closeBtn}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close-circle" size={28} color="#94A3B8" />
+              <Ionicons name="close-circle" size={28} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           {/* Overall Progress Banner */}
-          <View style={styles.overallBanner}>
+          <View style={[styles.overallBanner, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <View style={styles.bannerTopRow}>
-              <Text style={styles.bannerLabel}>{t.achievements.progressSummary}</Text>
-              <Text style={styles.bannerPct}>{overallProgressPct}%</Text>
+              <Text style={[styles.bannerLabel, { color: colors.textMuted }]}>{t.achievements.progressSummary}</Text>
+              <Text style={[styles.bannerPct, { color: colors.text }]}>{overallProgressPct}%</Text>
             </View>
-            <View style={styles.bannerBarBg}>
+            <View style={[styles.bannerBarBg, { backgroundColor: isDark ? '#0F172A' : '#E2E8F0' }]}>
               <View
                 style={[
                   styles.bannerBarFill,
@@ -257,9 +280,9 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
               />
             </View>
             {readyToClaimCount > 0 && (
-              <View style={styles.readyNotice}>
+              <View style={[styles.readyNotice, { backgroundColor: isDark ? '#78350F33' : '#FEF3C7', borderColor: '#F59E0B' }]}>
                 <Ionicons name="notifications-outline" size={14} color="#D97706" />
-                <Text style={styles.readyNoticeText}>
+                <Text style={[styles.readyNoticeText, { color: isDark ? '#FDE047' : '#D97706' }]}>
                   {readyToClaimCount} {t.achievements.modalTitle.toLowerCase()} {t.common.unlocked.toLowerCase()}
                 </Text>
               </View>
@@ -267,7 +290,7 @@ export const AchievementsModal: React.FC<AchievementsModalProps> = ({
           </View>
 
           {/* Categories Selector */}
-          <View style={styles.categoriesBar}>
+          <View style={[styles.categoriesBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
             {renderCategoryTab('ALL', t.achievements.allTab)}
             {renderCategoryTab('TEAMS', t.achievements.teamsTab)}
             {renderCategoryTab('COLLECTION', t.achievements.collectionTab)}

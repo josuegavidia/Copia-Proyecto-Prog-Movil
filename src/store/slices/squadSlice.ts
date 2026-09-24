@@ -54,16 +54,20 @@ const initialState: SquadState = {
 export const initApp = createAsyncThunk('squad/initApp', async () => {
   try {
     await SoundService.init();
-    await StorageService.initApp();
 
-    // Record login day
-    const loginDays = await StorageService.recordDailyLogin();
-    const loadedLang = await StorageService.getLanguage();
-    const loadedClaimed = await StorageService.getClaimedAchievements();
-    const loadedCareer = await StorageService.getCareerStats();
-
+    const guestStatus = await AuthService.isGuest();
     const session = await AuthService.getSession();
-    if (session) {
+
+    if (session?.user) {
+      StorageService.setActiveUser(session.user.id);
+      await StorageService.initApp(session.user.id);
+      await AuthService.ensureProfileExists(session.user);
+      await SyncService.pullCloudToLocal();
+
+      const loginDays = await StorageService.recordDailyLogin();
+      const loadedLang = await StorageService.getLanguage();
+      const loadedClaimed = await StorageService.getClaimedAchievements();
+      const loadedCareer = await StorageService.getCareerStats();
       const loadedCoins = await StorageService.getCoins();
       const loadedCards = await StorageService.getCards();
       const loadedLineup = await StorageService.getLineup();
@@ -79,6 +83,7 @@ export const initApp = createAsyncThunk('squad/initApp', async () => {
 
       return {
         isAuth: true,
+        isGuest: false,
         coins: loadedCoins,
         cards: uniqueCards,
         lineup: loadedLineup,
@@ -89,32 +94,45 @@ export const initApp = createAsyncThunk('squad/initApp', async () => {
       };
     }
 
-    // Guest / Local mode
-    const loadedCoins = await StorageService.getCoins();
-    const loadedCards = await StorageService.getCards();
-    const loadedLineup = await StorageService.getLineup();
-    const loadedCoaches = await StorageService.getCoaches();
+    if (guestStatus) {
+      StorageService.setActiveUser('guest');
+      await StorageService.initApp('guest');
 
-    const uniqueMap = new Map<string, UserCard>();
-    loadedCards.forEach((c) => {
-      if (!uniqueMap.has(c.instanceId)) {
-        uniqueMap.set(c.instanceId, c);
-      }
-    });
+      const loginDays = await StorageService.recordDailyLogin();
+      const loadedLang = await StorageService.getLanguage();
+      const loadedClaimed = await StorageService.getClaimedAchievements();
+      const loadedCareer = await StorageService.getCareerStats();
+      const loadedCoins = await StorageService.getCoins();
+      const loadedCards = await StorageService.getCards();
+      const loadedLineup = await StorageService.getLineup();
+      const loadedCoaches = await StorageService.getCoaches();
 
-    return {
-      isAuth: false,
-      coins: loadedCoins,
-      cards: Array.from(uniqueMap.values()),
-      lineup: loadedLineup,
-      coaches: loadedCoaches,
-      language: loadedLang,
-      claimedAchievements: loadedClaimed,
-      careerStats: { ...loadedCareer, daysLoggedIn: loginDays },
-    };
+      const uniqueMap = new Map<string, UserCard>();
+      loadedCards.forEach((c) => {
+        if (!uniqueMap.has(c.instanceId)) {
+          uniqueMap.set(c.instanceId, c);
+        }
+      });
+
+      return {
+        isAuth: true,
+        isGuest: true,
+        coins: loadedCoins,
+        cards: Array.from(uniqueMap.values()),
+        lineup: loadedLineup,
+        coaches: loadedCoaches,
+        language: loadedLang,
+        claimedAchievements: loadedClaimed,
+        careerStats: { ...loadedCareer, daysLoggedIn: loginDays },
+      };
+    }
+
+    // No session & not guest
+    StorageService.setActiveUser(null);
+    return { isAuth: false, isGuest: false };
   } catch (err) {
     console.warn('Init error in Redux:', err);
-    return { isAuth: false };
+    return { isAuth: false, isGuest: false };
   }
 });
 
@@ -307,11 +325,20 @@ export const addCoach = createAsyncThunk(
 
 export const logout = createAsyncThunk('squad/logout', async () => {
   await AuthService.signOut();
+  StorageService.setActiveUser(null);
+  return true;
 });
 
 export const setAuthSuccess = createAsyncThunk(
   'squad/setAuthSuccess',
   async (_, { dispatch }) => {
+    const session = await AuthService.getSession();
+    if (session?.user) {
+      StorageService.setActiveUser(session.user.id);
+      await StorageService.initApp(session.user.id);
+      await AuthService.ensureProfileExists(session.user);
+      await SyncService.pullCloudToLocal();
+    }
     await dispatch(loadLocalData());
     return true;
   }
@@ -320,6 +347,8 @@ export const setAuthSuccess = createAsyncThunk(
 export const setGuestSuccess = createAsyncThunk(
   'squad/setGuestSuccess',
   async (_, { dispatch }) => {
+    StorageService.setActiveUser('guest');
+    await StorageService.initApp('guest');
     await dispatch(loadLocalData());
     return true;
   }
@@ -350,6 +379,29 @@ export const squadSlice = createSlice({
     setIsAuth: (state, action: PayloadAction<boolean>) => {
       state.isAuth = action.payload;
     },
+    resetSquadState: (state) => {
+      state.coins = 500;
+      state.cards = [];
+      state.lineup = {
+        pg: null,
+        sg: null,
+        sf: null,
+        pf: null,
+        c: null,
+        coach: null,
+      };
+      state.coaches = [];
+      state.isAuth = false;
+      state.isGuest = false;
+      state.claimedAchievements = [];
+      state.careerStats = {
+        daysLoggedIn: 1,
+        hasCoachPhoto: false,
+        seasonsWon: 0,
+        totalPacksOpened: 0,
+        threePointHighScore: 0,
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -361,6 +413,7 @@ export const squadSlice = createSlice({
         state.isLoading = false;
         if (action.payload) {
           state.isAuth = !!action.payload.isAuth;
+          state.isGuest = !!action.payload.isGuest;
           if (action.payload.coins !== undefined) state.coins = action.payload.coins;
           if (action.payload.cards !== undefined) state.cards = action.payload.cards;
           if (action.payload.lineup !== undefined) state.lineup = action.payload.lineup;
@@ -373,6 +426,7 @@ export const squadSlice = createSlice({
       .addCase(initApp.rejected, (state) => {
         state.isLoading = false;
         state.isAuth = false;
+        state.isGuest = false;
       })
       // loadLocalData
       .addCase(loadLocalData.fulfilled, (state, action) => {
@@ -433,13 +487,35 @@ export const squadSlice = createSlice({
       // logout
       .addCase(logout.fulfilled, (state) => {
         state.isAuth = false;
+        state.isGuest = false;
+        state.coins = 500;
+        state.cards = [];
+        state.lineup = {
+          pg: null,
+          sg: null,
+          sf: null,
+          pf: null,
+          c: null,
+          coach: null,
+        };
+        state.coaches = [];
+        state.claimedAchievements = [];
+        state.careerStats = {
+          daysLoggedIn: 1,
+          hasCoachPhoto: false,
+          seasonsWon: 0,
+          totalPacksOpened: 0,
+          threePointHighScore: 0,
+        };
       })
       // setAuthSuccess & setGuestSuccess
       .addCase(setAuthSuccess.fulfilled, (state) => {
         state.isAuth = true;
+        state.isGuest = false;
       })
       .addCase(setGuestSuccess.fulfilled, (state) => {
         state.isAuth = true;
+        state.isGuest = true;
       });
   },
 });
@@ -452,6 +528,8 @@ export const {
   setLineupState,
   setCoachesState,
   setIsAuth,
+  resetSquadState,
 } = squadSlice.actions;
 
 export default squadSlice.reducer;
+

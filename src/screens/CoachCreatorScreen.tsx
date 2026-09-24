@@ -21,6 +21,8 @@ import { Ionicon } from '../components/Common/Ionicon';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addCoach, updateLineup } from '../store/slices/squadSlice';
 
+import { useTheme } from '../context/ThemeContext';
+
 const TACTICS_LIST: { style: TacticStyle; off: number; def: number; desc: string }[] = [
   {
     style: 'Pace & Space',
@@ -60,16 +62,33 @@ const TACTICS_LIST: { style: TacticStyle; off: number; def: number; desc: string
   },
 ];
 
-// Official card quality / tier colors
-const CARD_QUALITY_COLORS: { name: string; hex: string; label: string }[] = [
+// Official card rarity colors ONLY
+export const CARD_QUALITY_COLORS: { name: string; hex: string; label: string }[] = [
+  { name: 'Icono', hex: '#CA8A04', label: 'ICONO' },
   { name: 'Diamante', hex: '#0284C7', label: 'DIAMANTE' },
   { name: 'Oro', hex: '#EAB308', label: 'ORO' },
   { name: 'Plata', hex: '#94A3B8', label: 'PLATA' },
   { name: 'Bronce', hex: '#C2410C', label: 'BRONCE' },
-  { name: 'Esmeralda', hex: '#059669', label: 'ESMERALDA' },
-  { name: 'Rubí', hex: '#CE1141', label: 'RUBÍ' },
-  { name: 'Obsidiana', hex: '#0F172A', label: 'OBSIDIANA' },
-  { name: 'Púrpura Lakers', hex: '#552583', label: 'PÚRPURA' },
+];
+
+export const COACH_COUNTRIES: { name: string; flag: string; code: string }[] = [
+  { name: 'Honduras', flag: '🇭🇳', code: 'HN' },
+  { name: 'Estados Unidos', flag: '🇺🇸', code: 'USA' },
+  { name: 'España', flag: '🇪🇸', code: 'ESP' },
+  { name: 'Rep. Dominicana', flag: '🇩🇴', code: 'DOM' },
+  { name: 'México', flag: '🇲🇽', code: 'MEX' },
+  { name: 'Puerto Rico', flag: '🇵🇷', code: 'PUR' },
+  { name: 'Argentina', flag: '🇦🇷', code: 'ARG' },
+  { name: 'Canadá', flag: '🇨🇦', code: 'CAN' },
+  { name: 'Francia', flag: '🇫🇷', code: 'FRA' },
+  { name: 'Alemania', flag: '🇩🇪', code: 'GER' },
+  { name: 'Serbia', flag: '🇷🇸', code: 'SRB' },
+  { name: 'Eslovenia', flag: '🇸🇮', code: 'SLO' },
+  { name: 'Grecia', flag: '🇬🇷', code: 'GRE' },
+  { name: 'Brasil', flag: '🇧🇷', code: 'BRA' },
+  { name: 'Colombia', flag: '🇨🇴', code: 'COL' },
+  { name: 'Italia', flag: '🇮🇹', code: 'ITA' },
+  { name: 'Australia', flag: '🇦🇺', code: 'AUS' },
 ];
 
 interface CoachCreatorScreenProps {
@@ -83,6 +102,7 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
   onSaveCoach,
   onAssignToLineup,
 }) => {
+  const { colors, isDark } = useTheme();
   const dispatch = useAppDispatch();
   const reduxLineup = useAppSelector((state) => state.squad.lineup);
   const currentCoach = propsCurrentCoach !== undefined ? propsCurrentCoach : reduxLineup.coach;
@@ -101,11 +121,17 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
   const [selectedTeam, setSelectedTeam] = useState<string>(
     currentCoach?.teamAffinity || 'LAL'
   );
+  const [selectedCountry, setSelectedCountry] = useState<string>(
+    currentCoach?.country || 'Honduras'
+  );
+  const [selectedFlag, setSelectedFlag] = useState<string>(
+    currentCoach?.countryFlag || '🇭🇳'
+  );
   const [selectedTactic, setSelectedTactic] = useState<TacticStyle>(
     currentCoach?.tactic || 'Pace & Space'
   );
   const [bgColor, setBgColor] = useState<string>(
-    currentCoach?.bgColor || '#552583'
+    currentCoach?.bgColor || '#0284C7'
   );
 
   const cardRef = useRef<View>(null);
@@ -119,6 +145,8 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
     name: coachName.trim() || 'Head Coach',
     photoUri,
     teamAffinity: selectedTeam,
+    country: selectedCountry,
+    countryFlag: selectedFlag,
     tactic: selectedTactic,
     boostOffense: currentTacticObj.off,
     boostDefense: currentTacticObj.def,
@@ -145,7 +173,7 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
     } else {
       dispatch(updateLineup({ ...reduxLineup, coach: constructedCoach }));
     }
-  }, [coachName, photoUri, selectedTeam, selectedTactic, bgColor]);
+  }, [coachName, photoUri, selectedTeam, selectedCountry, selectedFlag, selectedTactic, bgColor]);
 
   const handleTakeSelfie = async () => {
     await HapticsService.selectionTick();
@@ -245,7 +273,7 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="always"
@@ -253,8 +281,8 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>ESTUDIO DE DIRECTOR TÉCNICO</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text }]}>ESTUDIO DE DIRECTOR TÉCNICO</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             Personaliza tu carta oficial de Head Coach. Todos los cambios se guardan automáticamente.
           </Text>
         </View>
@@ -267,7 +295,7 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
         </View>
 
         {/* Top Category Tabs */}
-        <View style={styles.tabContainer}>
+        <View style={[styles.tabContainer, { backgroundColor: isDark ? colors.bgCardSecondary : '#E2E8F0' }]}>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => {
@@ -276,18 +304,19 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
             }}
             style={[
               styles.tabButton,
-              activeTab === 'profile' && styles.tabButtonActive,
+              activeTab === 'profile' && [styles.tabButtonActive, { backgroundColor: colors.bgCard }],
             ]}
           >
             <Ionicon
               name="person-circle-outline"
               size={18}
-              color={activeTab === 'profile' ? '#006BB6' : '#64748B'}
+              color={activeTab === 'profile' ? colors.primary : colors.textMuted}
             />
             <Text
               style={[
                 styles.tabButtonText,
-                activeTab === 'profile' && styles.tabButtonTextActive,
+                { color: colors.textMuted },
+                activeTab === 'profile' && [styles.tabButtonTextActive, { color: colors.primary }],
               ]}
             >
               FOTO Y CARTA
@@ -302,18 +331,19 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
             }}
             style={[
               styles.tabButton,
-              activeTab === 'tactics' && styles.tabButtonActive,
+              activeTab === 'tactics' && [styles.tabButtonActive, { backgroundColor: colors.bgCard }],
             ]}
           >
             <Ionicon
               name="shield-outline"
               size={18}
-              color={activeTab === 'tactics' ? '#006BB6' : '#64748B'}
+              color={activeTab === 'tactics' ? colors.primary : colors.textMuted}
             />
             <Text
               style={[
                 styles.tabButtonText,
-                activeTab === 'tactics' && styles.tabButtonTextActive,
+                { color: colors.textMuted },
+                activeTab === 'tactics' && [styles.tabButtonTextActive, { color: colors.primary }],
               ]}
             >
               TÁCTICA Y FILOSOFÍA
@@ -340,10 +370,17 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={handlePickFromGallery}
-                style={[styles.photoButton, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1' }]}
+                style={[
+                  styles.photoButton,
+                  {
+                    backgroundColor: colors.bgCard,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  },
+                ]}
               >
-                <Ionicon name="images" size={17} color="#0F172A" />
-                <Text style={[styles.photoButtonText, { color: '#0F172A' }]}>
+                <Ionicon name="images" size={17} color={colors.text} />
+                <Text style={[styles.photoButtonText, { color: colors.text }]}>
                   GALERÍA
                 </Text>
               </TouchableOpacity>
@@ -356,7 +393,7 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
                   activeOpacity={0.85}
                   onPress={handleRemoveBackground}
                   disabled={isRemovingBg}
-                  style={styles.aiRemoveBtn}
+                  style={[styles.aiRemoveBtn, { backgroundColor: isDark ? '#1E293B' : '#0F172A' }]}
                 >
                   {isRemovingBg ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
@@ -374,30 +411,92 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
                     setPhotoUri('');
                     setPhotoBase64(undefined);
                   }}
-                  style={[styles.aiRemoveBtn, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#CBD5E1' }]}
+                  style={[
+                    styles.aiRemoveBtn,
+                    {
+                      backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9',
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
-                  <Text style={[styles.aiRemoveBtnText, { color: '#64748B' }]}>
+                  <Text style={[styles.aiRemoveBtnText, { color: colors.textMuted }]}>
                     QUITAR FOTO (USAR ÍCONO)
                   </Text>
                 </TouchableOpacity>
               </View>
             ) : null}
 
-            {/* Form Card: Name, Franchise, Quality Color */}
-            <View style={styles.formCard}>
+            {/* Form Card: Name, Franchise, Country/Flag, Quality Color */}
+            <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               {/* Coach Name */}
-              <Text style={styles.inputLabel}>NOMBRE DEL ENTRENADOR</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>NOMBRE DEL ENTRENADOR</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC',
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
                 value={coachName}
                 onChangeText={setCoachName}
                 placeholder="Ej. DT Johnson"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 maxLength={22}
               />
 
+              {/* Country & Flag Selector */}
+              <View style={styles.colorSectionHeader}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>PAÍS / NACIONALIDAD</Text>
+                <Text style={[styles.selectedFlagText, { color: colors.primary }]}>
+                  {selectedFlag} {selectedCountry}
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.countriesScroll}
+              >
+                {COACH_COUNTRIES.map((c) => {
+                  const isSelected = selectedCountry === c.name;
+                  return (
+                    <TouchableOpacity
+                      key={c.code}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        HapticsService.selectionTick();
+                        setSelectedCountry(c.name);
+                        setSelectedFlag(c.flag);
+                      }}
+                      style={[
+                        styles.countryChip,
+                        {
+                          backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC',
+                          borderColor: isSelected ? colors.primary : colors.border,
+                        },
+                        isSelected && { backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF', borderWidth: 1.5 },
+                      ]}
+                    >
+                      <Text style={styles.countryChipFlag}>{c.flag}</Text>
+                      <Text
+                        style={[
+                          styles.countryChipText,
+                          { color: isSelected ? colors.primary : colors.text },
+                        ]}
+                      >
+                        {c.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
               {/* NBA Team Franchise Selector */}
-              <Text style={styles.inputLabel}>FRANQUICIA AFÍN (LOGOTIPO Y DETALLES)</Text>
+              <Text style={[styles.inputLabel, { color: colors.text, marginTop: 12 }]}>
+                FRANQUICIA AFÍN (LOGOTIPO Y DETALLES)
+              </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -416,15 +515,15 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
                       style={[
                         styles.teamPill,
                         {
-                          backgroundColor: isSelected ? t.primaryColor : '#F8FAFC',
-                          borderColor: isSelected ? t.primaryColor : '#CBD5E1',
+                          backgroundColor: isSelected ? t.primaryColor : isDark ? colors.bgCardSecondary : '#F8FAFC',
+                          borderColor: isSelected ? t.primaryColor : colors.border,
                         },
                       ]}
                     >
                       <Text
                         style={[
                           styles.teamPillText,
-                          { color: isSelected ? '#FFFFFF' : '#334155' },
+                          { color: isSelected ? '#FFFFFF' : colors.text },
                         ]}
                       >
                         {teamAbbr}
@@ -436,7 +535,9 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
 
               {/* Quality / Tier Color Selector */}
               <View style={styles.colorSectionHeader}>
-                <Text style={styles.inputLabel}>COLOR DE CALIDAD DE CARTA</Text>
+                <Text style={[styles.inputLabel, { color: colors.text, marginTop: 12 }]}>
+                  COLOR DE CALIDAD DE CARTA
+                </Text>
                 <View style={[styles.selectedColorIndicator, { backgroundColor: bgColor }]} />
               </View>
               <ScrollView
@@ -477,8 +578,8 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
 
         {/* TAB 2: TÁCTICA Y FILOSOFÍA */}
         {activeTab === 'tactics' && (
-          <View style={styles.formCard}>
-            <Text style={styles.inputLabel}>SELECCIONA LA FILOSOFÍA TÁCTICA</Text>
+          <View style={[styles.formCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>SELECCIONA LA FILOSOFÍA TÁCTICA</Text>
             <View style={styles.tacticsGrid}>
               {TACTICS_LIST.map((t) => {
                 const isSelected = selectedTactic === t.style;
@@ -491,25 +592,30 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
                     }}
                     style={[
                       styles.tacticCard,
-                      isSelected && styles.tacticCardActive,
+                      {
+                        backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC',
+                        borderColor: isSelected ? colors.primary : colors.border,
+                      },
+                      isSelected && { backgroundColor: isDark ? '#1E293B' : '#F0F9FF' },
                     ]}
                   >
                     <View style={styles.tacticTop}>
                       <Text
                         style={[
                           styles.tacticName,
-                          isSelected && { color: '#006BB6' },
+                          { color: colors.text },
+                          isSelected && { color: colors.primary },
                         ]}
                       >
                         {t.style}
                       </Text>
-                      <View style={styles.boostPillWrap}>
-                        <Text style={styles.boostSub}>
+                      <View style={[styles.boostPillWrap, { backgroundColor: isDark ? '#1E3A8A' : '#E0F2FE' }]}>
+                        <Text style={[styles.boostSub, { color: isDark ? '#93C5FD' : '#0369A1' }]}>
                           +{t.off} OFF / +{t.def} DEF
                         </Text>
                       </View>
                     </View>
-                    <Text style={styles.tacticDesc}>{t.desc}</Text>
+                    <Text style={[styles.tacticDesc, { color: colors.textMuted }]}>{t.desc}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -522,10 +628,9 @@ export const CoachCreatorScreen: React.FC<CoachCreatorScreenProps> = ({
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleExportAndShare}
-            style={styles.exportButton}
+            style={[styles.exportButton, { backgroundColor: colors.bgCard, borderColor: colors.primary }]}
           >
-
-            <Text style={styles.exportButtonText}>EXPORTAR IMAGEN HD</Text>
+            <Text style={[styles.exportButtonText, { color: colors.primary }]}>EXPORTAR IMAGEN HD</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -668,6 +773,36 @@ const styles = StyleSheet.create({
   teamPillText: {
     fontSize: 11,
     fontWeight: 'bold',
+  },
+  selectedFlagText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  countriesScroll: {
+    gap: 8,
+    paddingBottom: 8,
+  },
+  countryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  countryChipSelected: {
+    borderColor: '#0284C7',
+  },
+  countryChipFlag: {
+    fontSize: 16,
+  },
+  countryChipText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  countryChipTextSelected: {
+    fontWeight: '900',
   },
   colorSectionHeader: {
     flexDirection: 'row',

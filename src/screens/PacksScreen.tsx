@@ -15,11 +15,12 @@ import { DailyMarketView } from '../components/Market/DailyMarketView';
 import { StorageService } from '../services/storage';
 import { HapticsService } from '../services/haptics';
 import { THEME } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addCards, spendCoins } from '../store/slices/squadSlice';
 
-const FREE_PACK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const FREE_PACK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 interface PacksScreenProps {
   coins?: number;
@@ -30,6 +31,7 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
   coins: propsCoins,
   onPacksOpened,
 }) => {
+  const { colors, isDark } = useTheme();
   const dispatch = useAppDispatch();
   const reduxCoins = useAppSelector((state) => state.squad.coins);
   const coins = propsCoins !== undefined ? propsCoins : reduxCoins;
@@ -39,7 +41,7 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
   const [openingCost, setOpeningCost] = useState<number>(0);
   const [isOpeningModalVisible, setIsOpeningModalVisible] = useState(false);
 
-  // Free pack cooldown state (5 minutes)
+  // Free pack cooldown state (6 hours)
   const [lastFreePackTime, setLastFreePackTime] = useState<number>(0);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
 
@@ -71,8 +73,12 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
   const isFreeBronzeAvailable = secondsRemaining === 0;
 
   const formatTimer = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
     const secs = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours}h ${mins.toString().padStart(2, '0')}m`;
+    }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -116,20 +122,22 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top Coins Bar */}
-      <View style={styles.topHud}>
+      <View style={[styles.topHud, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <View style={styles.coinsCounter}>
           <Ionicons name="cash-outline" size={20} color="#CA8A04" />
-          <Text style={styles.coinsValue}>{coins.toLocaleString()}</Text>
-          <Text style={styles.coinsLabel}>Monedas</Text>
+          <Text style={[styles.coinsValue, { color: colors.text }]}>{coins.toLocaleString()}</Text>
+          <Text style={[styles.coinsLabel, { color: colors.textMuted }]}>Monedas</Text>
         </View>
 
         {/* Free Bronze Pack Status Pill */}
         <View
           style={[
             styles.freeTimerPill,
-            isFreeBronzeAvailable ? styles.freeTimerPillReady : styles.freeTimerPillWaiting,
+            isFreeBronzeAvailable
+              ? styles.freeTimerPillReady
+              : [styles.freeTimerPillWaiting, { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9', borderColor: colors.border }],
           ]}
         >
           {isFreeBronzeAvailable ? (
@@ -139,8 +147,8 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
             </>
           ) : (
             <>
-              <Ionicons name="time-outline" size={13} color="#64748B" />
-              <Text style={styles.freeTimerPillWaitingText}>
+              <Ionicons name="time-outline" size={13} color={colors.textMuted} />
+              <Text style={[styles.freeTimerPillWaitingText, { color: colors.textMuted }]}>
                 Gratis en {formatTimer(secondsRemaining)}
               </Text>
             </>
@@ -149,21 +157,31 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
       </View>
 
       {/* STORE SUB-TABS: PACKS VS DAILY ROTATING MARKET */}
-      <View style={styles.storeTabsRow}>
+      <View style={[styles.storeTabsRow, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => {
             HapticsService.selectionTick();
             setStoreTab('PACKS');
           }}
-          style={[styles.storeTabBtn, storeTab === 'PACKS' && styles.storeTabBtnActive]}
+          style={[
+            styles.storeTabBtn,
+            { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' },
+            storeTab === 'PACKS' && styles.storeTabBtnActive,
+          ]}
         >
           <Ionicons
             name="cube"
             size={15}
-            color={storeTab === 'PACKS' ? '#FFFFFF' : '#64748B'}
+            color={storeTab === 'PACKS' ? '#FFFFFF' : colors.textMuted}
             style={{ marginRight: 6 }}
           />
-          <Text style={[styles.storeTabBtnText, storeTab === 'PACKS' && styles.storeTabBtnTextActive]}>
+          <Text
+            style={[
+              styles.storeTabBtnText,
+              { color: colors.textMuted },
+              storeTab === 'PACKS' && styles.storeTabBtnTextActive,
+            ]}
+          >
             Sobres Oficiales
           </Text>
         </TouchableOpacity>
@@ -173,7 +191,11 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
             HapticsService.selectionTick();
             setStoreTab('MARKET');
           }}
-          style={[styles.storeTabBtn, storeTab === 'MARKET' && styles.storeTabBtnActiveMarket]}
+          style={[
+            styles.storeTabBtn,
+            { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' },
+            storeTab === 'MARKET' && styles.storeTabBtnActiveMarket,
+          ]}
         >
           <Ionicons
             name="basket"
@@ -181,7 +203,13 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
             color={storeTab === 'MARKET' ? '#FFFFFF' : '#DC2626'}
             style={{ marginRight: 6 }}
           />
-          <Text style={[styles.storeTabBtnText, storeTab === 'MARKET' && styles.storeTabBtnTextActive]}>
+          <Text
+            style={[
+              styles.storeTabBtnText,
+              { color: colors.textMuted },
+              storeTab === 'MARKET' && styles.storeTabBtnTextActive,
+            ]}
+          >
             Mercado 24h
           </Text>
         </TouchableOpacity>
@@ -206,8 +234,8 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <Text style={styles.sectionHeader}>TIENDA OFICIAL DE SOBRES NBA</Text>
-          <Text style={styles.sectionSub}>
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>TIENDA OFICIAL DE SOBRES NBA</Text>
+          <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
             Colecciona las estrellas de la NBA para potenciar tu quinteto titular
           </Text>
 
@@ -222,7 +250,7 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
                 key={pack.id}
                 style={[
                   styles.packCard,
-                  { borderColor: pack.themeColor },
+                  { backgroundColor: colors.bgCard, borderColor: pack.themeColor },
                 ]}
               >
                 {/* Pack Visual Artistic Foil Front (Clean - No emojis, only NBA logo) */}
@@ -262,8 +290,8 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
                 {/* Pack Details */}
                 <View style={styles.packInfo}>
                   <View>
-                    <Text style={styles.packName}>{pack.name}</Text>
-                    <Text style={styles.packDesc}>{pack.description}</Text>
+                    <Text style={[styles.packName, { color: colors.text }]}>{pack.name}</Text>
+                    <Text style={[styles.packDesc, { color: colors.textMuted }]}>{pack.description}</Text>
                   </View>
 
                   {/* Buttons Section */}
@@ -281,9 +309,9 @@ export const PacksScreen: React.FC<PacksScreenProps> = ({
                             <Text style={styles.freeBronzeBtnText}>ABRIR GRATIS</Text>
                           </TouchableOpacity>
                         ) : (
-                          <View style={styles.timerTag}>
-                            <Ionicons name="time-outline" size={11} color="#64748B" style={{ marginRight: 4 }} />
-                            <Text style={styles.timerTagText}>
+                          <View style={[styles.timerTag, { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' }]}>
+                            <Ionicons name="time-outline" size={11} color={colors.textMuted} style={{ marginRight: 4 }} />
+                            <Text style={[styles.timerTagText, { color: colors.textMuted }]}>
                               Gratis en {formatTimer(secondsRemaining)}
                             </Text>
                           </View>

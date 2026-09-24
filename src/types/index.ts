@@ -45,6 +45,9 @@ export interface NBAPlayer {
   isLegend?: boolean;
   classicTeamYear?: string;
   unitType?: UnitType;
+  height?: string;
+  country?: string;
+  countryFlag?: string;
 }
 
 export interface UserCard {
@@ -79,6 +82,8 @@ export interface CustomCoach {
   secondaryBgColor?: string;
   isCutout?: boolean;
   cutoutShape?: 'bust' | 'oval' | 'square';
+  country?: string;
+  countryFlag?: string;
 }
 
 export interface SquadLineup {

@@ -1,5 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 import { supabase, isSupabaseConfigured } from './supabase';
+
+// Ensure any in-flight auth sessions are completed properly
+WebBrowser.maybeCompleteAuthSession();
 
 export interface ManagerProfile {
   id: string;
@@ -19,9 +25,9 @@ interface LocalAccount {
   username: string;
 }
 
-const SESSION_KEY = '@nba_session_v5';
-const ACCOUNTS_KEY = '@nba_accounts_v5';
-const GUEST_KEY = '@nba_is_guest_v5';
+const SESSION_KEY = '@nba_session_v7';
+const ACCOUNTS_KEY = '@nba_accounts_v7';
+const GUEST_KEY = '@nba_is_guest_v7';
 
 export const AuthService = {
   // Check if Supabase connection is available
@@ -98,6 +104,7 @@ export const AuthService = {
         if (error) throw error;
         if (data.session) {
           await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(data.session));
+          await AuthService.setGuestMode(false);
         }
         return data;
       } catch (err: any) {
@@ -185,6 +192,104 @@ export const AuthService = {
     return sessionObj;
   },
 
+  // Sign in with Social OAuth (Google, Apple, Facebook)
+  signInWithOAuth: async (provider: 'google' | 'apple' | 'facebook') => {
+    if (!isSupabaseConfigured()) {
+      throw new Error(
+        'Supabase no está configurado. Por favor verifica las credenciales EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY en tu archivo .env.'
+      );
+    }
+
+    try {
+      const redirectUrl = AuthSession.makeRedirectUri({
+        scheme: 'nbasquadbuilder',
+        path: 'auth/callback',
+      });
+      console.log('🔗 [OAuth] Redirect URL generada:', redirectUrl);
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'offline',
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.url) {
+        throw new Error(`No se pudo obtener la URL de autenticación de ${provider}.`);
+      }
+
+      // Open in-app WebBrowser session
+      const authResult = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+      if (authResult.type === 'success' && authResult.url) {
+        const rawUrl = authResult.url;
+        const hashPart = rawUrl.includes('#') ? rawUrl.split('#')[1] : '';
+        const queryPart = rawUrl.includes('?') ? rawUrl.split('?')[1]?.split('#')[0] : '';
+        const combined = [hashPart, queryPart].filter(Boolean).join('&');
+
+        const params: Record<string, string> = {};
+        combined.split('&').forEach((pair) => {
+          const [k, v] = pair.split('=');
+          if (k && v) {
+            params[decodeURIComponent(k)] = decodeURIComponent(v);
+          }
+        });
+
+        if (params.error || params.error_description) {
+          throw new Error(params.error_description || params.error || 'Error en la autenticación social.');
+        }
+
+        // Implicit grant tokens
+        if (params.access_token && params.refresh_token) {
+          const { data: sessionData, error: sessionErr } = await supabase.auth.setSession({
+            access_token: params.access_token,
+            refresh_token: params.refresh_token,
+          });
+          if (sessionErr) throw sessionErr;
+          if (sessionData.session) {
+            await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sessionData.session));
+            await AuthService.setGuestMode(false);
+            return sessionData.session;
+          }
+        }
+
+        // PKCE grant code
+        if (params.code) {
+          const { data: sessionData, error: sessionErr } = await supabase.auth.exchangeCodeForSession(params.code);
+          if (sessionErr) throw sessionErr;
+          if (sessionData.session) {
+            await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sessionData.session));
+            await AuthService.setGuestMode(false);
+            return sessionData.session;
+          }
+        }
+
+        // Check active session from client
+        const { data: activeSession } = await supabase.auth.getSession();
+        if (activeSession?.session) {
+          await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(activeSession.session));
+          await AuthService.setGuestMode(false);
+          return activeSession.session;
+        }
+
+        throw new Error(`No se pudo completar la sesión con ${provider}.`);
+      } else if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+        throw new Error('Inicio de sesión cancelado.');
+      } else {
+        throw new Error('No se pudo autenticar con el navegador.');
+      }
+    } catch (err: any) {
+      console.warn(`Supabase ${provider} OAuth error:`, err);
+      throw err;
+    }
+  },
+
   // Sign Out
   signOut: async () => {
     try {
@@ -198,17 +303,106 @@ export const AuthService = {
     }
   },
 
+  // Ensure profile row exists in Supabase DB (creates it if deleted or on new OAuth signup)
+  ensureProfileExists: async (user: any): Promise<any> => {
+    if (!isSupabaseConfigured() || !user?.id) return null;
+    try {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!existing) {
+        const username =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.username ||
+          user.user_metadata?.name ||
+          user.email?.split('@')[0] ||
+          'NBA Manager';
+
+        const avatarUrl =
+          user.user_metadata?.avatar_url ||
+          user.user_metadata?.picture ||
+          null;
+
+        const { data: inserted, error: insertErr } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email,
+            username,
+            avatar_url: avatarUrl,
+            coins: 1500,
+            total_packs_opened: 0,
+            three_point_high_score: 0,
+            seasons_won: 0,
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .maybeSingle();
+
+        if (insertErr) {
+          console.warn('ensureProfileExists insert warning:', insertErr);
+        }
+
+        // Also ensure an initial lineup row exists for foreign key references
+        try {
+          await supabase.from('user_lineups').upsert(
+            {
+              user_id: user.id,
+              team_name: 'Mi Franquicia',
+              team_abbr: 'LAL',
+            },
+            { onConflict: 'user_id' }
+          );
+        } catch {}
+
+        return inserted || null;
+      }
+      return existing;
+    } catch (err) {
+      console.warn('ensureProfileExists error:', err);
+      return null;
+    }
+  },
+
   // Get Manager Profile
   getProfile: async (): Promise<ManagerProfile> => {
     try {
       const user = await AuthService.getCurrentUser();
       if (user) {
+        let dbProfile: any = null;
+        if (isSupabaseConfigured()) {
+          try {
+            dbProfile = await AuthService.ensureProfileExists(user);
+          } catch {
+            // Profile trigger or fallback
+          }
+        }
+
+        const username =
+          dbProfile?.username ||
+          user.user_metadata?.full_name ||
+          user.user_metadata?.username ||
+          user.user_metadata?.name ||
+          user.email?.split('@')[0] ||
+          'NBA Manager';
+
+        const avatarUrl =
+          dbProfile?.avatar_url ||
+          user.user_metadata?.avatar_url ||
+          user.user_metadata?.picture ||
+          undefined;
+
         return {
           id: user.id || 'manager-1',
-          username: user.user_metadata?.username || user.email?.split('@')[0] || 'Rookie Manager',
+          username,
           email: user.email,
-          coins: 500,
-          total_packs_opened: 0,
+          avatar_url: avatarUrl,
+          coins: typeof dbProfile?.coins === 'number' ? dbProfile.coins : 1500,
+          total_packs_opened: dbProfile?.total_packs_opened ?? 0,
+          created_at: dbProfile?.created_at || user.created_at,
         };
       }
 
@@ -228,3 +422,4 @@ export const AuthService = {
     }
   },
 };
+

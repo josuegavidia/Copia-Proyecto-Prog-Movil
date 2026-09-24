@@ -6,6 +6,7 @@ import { NORTHWEST_DOSSIER_DATABASE } from './playerDossierNorthwest';
 import { PACIFIC_DOSSIER_DATABASE } from './playerDossierPacific';
 import { SOUTHEAST_DOSSIER_DATABASE } from './playerDossierSoutheast';
 import { SOUTHWEST_DOSSIER_DATABASE } from './playerDossierSouthwest';
+import { LEGENDS_DOSSIER_DATABASE } from './playerDossierLegends';
 
 export interface PlayerAward {
   icon: string;
@@ -38,6 +39,7 @@ export interface PlayerDossier {
 
 // Master repository of detailed historical records for NBA stars and legends
 const DOSSIER_DATABASE: Record<string, Partial<PlayerDossier>> = {
+  ...LEGENDS_DOSSIER_DATABASE,
   ...ATLANTIC_DOSSIER_DATABASE,
   ...CENTRAL_DOSSIER_DATABASE,
   ...NORTHWEST_DOSSIER_DATABASE,

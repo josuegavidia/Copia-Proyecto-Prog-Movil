@@ -21,6 +21,7 @@ import { PlayerDetailModal } from '../components/Card/PlayerDetailModal';
 import { SquadExportModal } from '../components/Squad/SquadExportModal';
 import { HapticsService } from '../services/haptics';
 import { THEME } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { Ionicon } from '../components/Common/Ionicon';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -44,6 +45,7 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
   onNavigateToCoachCreator,
   onCoinsEarned,
 }) => {
+  const { colors, isDark } = useTheme();
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
   const reduxLineup = useAppSelector((state) => state.squad.lineup);
@@ -170,9 +172,9 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top Header Bar */}
-      <View style={styles.headerBar}>
+      <View style={[styles.headerBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           activeOpacity={0.75}
           onPress={async () => {
@@ -185,7 +187,7 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
           style={styles.teamNameHeaderWrap}
         >
           {/* Official Franchise Logo */}
-          <View style={styles.headerLogoContainer}>
+          <View style={[styles.headerLogoContainer, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
             <Image
               source={{ uri: teamLogo }}
               style={styles.headerTeamLogo}
@@ -195,14 +197,14 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
 
           <View style={styles.teamHeaderInfo}>
             <View style={styles.titleWithIcon}>
-              <Text numberOfLines={1} style={styles.headerTitle}>
+              <Text numberOfLines={1} style={[styles.headerTitle, { color: colors.text }]}>
                 {teamName.toUpperCase()}
               </Text>
-              <View style={styles.editPencilBadge}>
-                <Ionicons name="pencil" size={11} color="#006BB6" />
+              <View style={[styles.editPencilBadge, { backgroundColor: isDark ? colors.bgCardSecondary : '#EFF6FF' }]}>
+                <Ionicons name="pencil" size={11} color={colors.primary} />
               </View>
             </View>
-            <Text style={styles.headerSubtitle}>
+            <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
               Toca para editar escudo y nombre · {inventory.length} {inventory.length === 1 ? 'jugador' : 'jugadores'}
             </Text>
           </View>
@@ -214,44 +216,50 @@ export const SquadScreen: React.FC<SquadScreenProps> = ({
             await HapticsService.selectionTick();
             setExportModalVisible(true);
           }}
-          style={styles.exportHeaderBtn}
+          style={[
+            styles.exportHeaderBtn,
+            {
+              backgroundColor: isDark ? colors.bgCardSecondary : '#EFF6FF',
+              borderColor: isDark ? colors.border : '#BFDBFE',
+            },
+          ]}
         >
-          <Ionicons name="share-social-outline" size={15} color="#006BB6" style={{ marginRight: 4 }} />
-          <Text style={styles.exportHeaderBtnText}>Compartir</Text>
+          <Ionicons name="share-social-outline" size={15} color={colors.primary} style={{ marginRight: 4 }} />
+          <Text style={[styles.exportHeaderBtnText, { color: colors.primary }]}>Compartir</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.hudContainer}>
+      <View style={[styles.hudContainer, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <View style={styles.ovrBigBox}>
           <Text style={styles.ovrLabel}>OVR TOTAL</Text>
           <Text style={styles.ovrScore}>{synergy.totalOvr}</Text>
         </View>
 
         <View style={styles.hudStatsGrid}>
-          <View style={styles.hudStatBox}>
+          <View style={[styles.hudStatBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#FFFFFF', borderColor: colors.border }]}>
             <View style={styles.statLabelRow}>
               <Ionicons name="flame" size={12} color="#D97706" style={{ marginRight: 3 }} />
-              <Text style={styles.statLabelText}>QUÍMICA</Text>
+              <Text style={[styles.statLabelText, { color: colors.textMuted }]}>QUÍMICA</Text>
             </View>
             <Text style={[styles.statValue, { color: '#D97706' }]}>
               {synergy.teamChemistry}%
             </Text>
           </View>
 
-          <View style={styles.hudStatBox}>
+          <View style={[styles.hudStatBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#FFFFFF', borderColor: colors.border }]}>
             <View style={styles.statLabelRow}>
               <Ionicons name="flash" size={12} color="#0284C7" style={{ marginRight: 3 }} />
-              <Text style={styles.statLabelText}>ATAQUE</Text>
+              <Text style={[styles.statLabelText, { color: colors.textMuted }]}>ATAQUE</Text>
             </View>
             <Text style={[styles.statValue, { color: '#0284C7' }]}>
               {synergy.offenseRating}
             </Text>
           </View>
 
-          <View style={styles.hudStatBox}>
+          <View style={[styles.hudStatBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#FFFFFF', borderColor: colors.border }]}>
             <View style={styles.statLabelRow}>
               <Ionicons name="shield" size={12} color="#16A34A" style={{ marginRight: 3 }} />
-              <Text style={styles.statLabelText}>DEFENSA</Text>
+              <Text style={[styles.statLabelText, { color: colors.textMuted }]}>DEFENSA</Text>
             </View>
             <Text style={[styles.statValue, { color: '#16A34A' }]}>
               {synergy.defenseRating}

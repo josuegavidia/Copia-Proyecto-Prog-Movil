@@ -18,6 +18,7 @@ import { NBA_TEAMS } from '../../data/nbaTeams';
 import { NBACard } from '../Card/NBACard';
 import { THEME } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 interface PlayerSelectModalProps {
   visible: boolean;
@@ -46,6 +47,7 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
   onSelect,
   onClose,
 }) => {
+  const { colors, isDark } = useTheme();
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -114,15 +116,15 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.modalOverlay}
       >
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {/* Header */}
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <View>
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
                 SELECCIONAR {POSITION_NAMES[position].toUpperCase()}
               </Text>
-              <Text style={styles.modalSubtitle}>
-                Jugadores aptos para <Text style={styles.posHighlight}>{position}</Text> ({filteredCards.length} disponibles)
+              <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
+                Jugadores aptos para <Text style={[styles.posHighlight, { color: isDark ? '#38BDF8' : '#006BB6' }]}>{position}</Text> ({filteredCards.length} disponibles)
               </Text>
             </View>
 
@@ -131,19 +133,19 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
                 Keyboard.dismiss();
                 onClose();
               }}
-              style={styles.closeBtn}
+              style={[styles.closeBtn, { backgroundColor: colors.bgCardSecondary }]}
             >
-              <Ionicons name="close" size={20} color="#64748B" />
+              <Ionicons name="close" size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           {/* Search Input Bar (Always stays fixed at top) */}
-          <View style={styles.searchBarContainer}>
-            <Ionicons name="search" size={16} color="#94A3B8" style={styles.searchIcon} />
+          <View style={[styles.searchBarContainer, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
+            <Ionicons name="search" size={16} color={colors.textMuted} style={styles.searchIcon} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholder="Buscar por jugador o franquicia..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
               clearButtonMode="while-editing"
@@ -152,14 +154,14 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                <Ionicons name="close-circle" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
 
           {/* Horizontal NBA Team Filter Bar (Fixed at top) */}
           {availableTeams.length > 0 && (
-            <View style={styles.teamFilterWrapper}>
+            <View style={[styles.teamFilterWrapper, { borderBottomColor: colors.border }]}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -174,12 +176,14 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
                   }}
                   style={[
                     styles.teamPill,
+                    { backgroundColor: colors.bgCardSecondary, borderColor: colors.border },
                     selectedTeamFilter === 'ALL' && styles.teamPillActive,
                   ]}
                 >
                   <Text
                     style={[
                       styles.teamPillText,
+                      { color: colors.textMuted },
                       selectedTeamFilter === 'ALL' && styles.teamPillTextActive,
                     ]}
                   >
@@ -200,6 +204,7 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
                       }}
                       style={[
                         styles.teamPill,
+                        { backgroundColor: colors.bgCardSecondary, borderColor: colors.border },
                         isSelected && styles.teamPillActive,
                       ]}
                     >
@@ -213,6 +218,7 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
                       <Text
                         style={[
                           styles.teamPillText,
+                          { color: colors.textMuted },
                           isSelected && styles.teamPillTextActive,
                         ]}
                       >
@@ -269,11 +275,11 @@ export const PlayerSelectModal: React.FC<PlayerSelectModalProps> = ({
             }}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons name="alert-circle-outline" size={36} color="#94A3B8" />
-                <Text style={styles.emptyText}>
+                <Ionicons name="alert-circle-outline" size={36} color={colors.textMuted} />
+                <Text style={[styles.emptyText, { color: colors.text }]}>
                   No se encontraron jugadores para este filtro
                 </Text>
-                <Text style={styles.emptySubtext}>
+                <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
                   {selectedTeamFilter !== 'ALL'
                     ? `No tienes jugadores del equipo ${selectedTeamFilter} aptos para ${position}.`
                     : `No tienes más jugadores disponibles para la posición ${position}.`}

@@ -16,19 +16,34 @@ import {
   setProfileModalVisible,
   setAchievementsModalVisible,
 } from '../store/slices/squadSlice';
+import { WelcomeTeamModal } from '../components/Common/WelcomeTeamModal';
+import { StorageService } from '../services/storage';
 import { NBA_THEME } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Componente contenedor de las pestañas principales con su Header, Perfil y Logros
 const MainTabsWrapper: React.FC = () => {
+  const { colors } = useTheme();
   const dispatch = useAppDispatch();
   const coins = useAppSelector((state) => state.squad.coins);
   const profileModalVisible = useAppSelector((state) => state.squad.profileModalVisible);
   const achievementsModalVisible = useAppSelector((state) => state.squad.achievementsModalVisible);
+  const [showWelcomeModal, setShowWelcomeModal] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkStarterStatus = async () => {
+      const claimed = await StorageService.hasClaimedStarterPack();
+      if (!claimed) {
+        setShowWelcomeModal(true);
+      }
+    };
+    checkStarterStatus();
+  }, []);
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: colors.bg }]}>
       <ManagerHeader
         coins={coins}
         onOpenProfile={() => dispatch(setProfileModalVisible(true))}
@@ -43,6 +58,13 @@ const MainTabsWrapper: React.FC = () => {
       <AchievementsModal
         visible={achievementsModalVisible}
         onClose={() => dispatch(setAchievementsModalVisible(false))}
+      />
+      <WelcomeTeamModal
+        visible={showWelcomeModal}
+        onFinish={() => {
+          setShowWelcomeModal(false);
+          dispatch(loadLocalData());
+        }}
       />
     </View>
   );

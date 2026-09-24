@@ -19,6 +19,7 @@ import { ACTIVE_NBA_PLAYERS } from '../data/nbaPlayers';
 import { CLASSIC_TEAMS } from '../data/classicTeams';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { earnCoins } from '../store/slices/squadSlice';
+import { useTheme } from '../context/ThemeContext';
 
 interface ThreePointContestProps {
   visible: boolean;
@@ -44,6 +45,7 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
   inventoryCards: propsInventoryCards,
   onCoinsEarned,
 }) => {
+  const { colors, isDark } = useTheme();
   const dispatch = useAppDispatch();
   const reduxCards = useAppSelector((state) => state.squad.cards);
   const inventoryCards = propsInventoryCards || reduxCards;
@@ -423,7 +425,7 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
 
         {/* 1. SELECTION SCREEN */}
         {gameState === 'SELECT' && (
-          <View style={styles.selectContainer}>
+          <View style={[styles.selectContainer, { backgroundColor: colors.bg }]}>
             {/* Shooter Source Tabs */}
             <View style={styles.tabsRow}>
               <TouchableOpacity
@@ -431,15 +433,19 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                   HapticsService.selectionTick();
                   setSourceTab('INVENTORY');
                 }}
-                style={[styles.tabBtn, sourceTab === 'INVENTORY' && styles.tabBtnActive]}
+                style={[
+                  styles.tabBtn,
+                  { backgroundColor: colors.bgCardSecondary },
+                  sourceTab === 'INVENTORY' && styles.tabBtnActive,
+                ]}
               >
                 <Ionicons
                   name="albums"
                   size={15}
-                  color={sourceTab === 'INVENTORY' ? '#FFFFFF' : '#64748B'}
+                  color={sourceTab === 'INVENTORY' ? '#FFFFFF' : colors.textMuted}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[styles.tabBtnText, sourceTab === 'INVENTORY' && styles.tabBtnTextActive]}>
+                <Text style={[styles.tabBtnText, { color: colors.textMuted }, sourceTab === 'INVENTORY' && styles.tabBtnTextActive]}>
                   Mis Cartas ({inventoryCards.length})
                 </Text>
               </TouchableOpacity>
@@ -449,24 +455,28 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                   HapticsService.selectionTick();
                   setSourceTab('ALL_STARS');
                 }}
-                style={[styles.tabBtn, sourceTab === 'ALL_STARS' && styles.tabBtnActive]}
+                style={[
+                  styles.tabBtn,
+                  { backgroundColor: colors.bgCardSecondary },
+                  sourceTab === 'ALL_STARS' && styles.tabBtnActive,
+                ]}
               >
                 <Ionicons
                   name="star"
                   size={15}
-                  color={sourceTab === 'ALL_STARS' ? '#FFFFFF' : '#64748B'}
+                  color={sourceTab === 'ALL_STARS' ? '#FFFFFF' : colors.textMuted}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[styles.tabBtnText, sourceTab === 'ALL_STARS' && styles.tabBtnTextActive]}>
+                <Text style={[styles.tabBtnText, { color: colors.textMuted }, sourceTab === 'ALL_STARS' && styles.tabBtnTextActive]}>
                   Tiradores All-Star
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Filter / Sort Explanation Banner */}
-            <View style={styles.sortNoticeBanner}>
-              <Ionicons name="filter" size={14} color="#1D428A" style={{ marginRight: 6 }} />
-              <Text style={styles.sortNoticeText}>
+            <View style={[styles.sortNoticeBanner, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF', borderColor: colors.border }]}>
+              <Ionicons name="filter" size={14} color={isDark ? '#38BDF8' : '#1D428A'} style={{ marginRight: 6 }} />
+              <Text style={[styles.sortNoticeText, { color: isDark ? '#93C5FD' : '#1D428A' }]}>
                 Ordenados de mayor a menor según <Text style={{ fontWeight: '800' }}>Estadística de Triples (3PT)</Text>.
               </Text>
             </View>
@@ -474,9 +484,9 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
             {/* List of Sorted Shooters */}
             {sortedShooters.length === 0 ? (
               <View style={styles.emptyWrap}>
-                <Ionicons name="basketball-outline" size={48} color="#94A3B8" />
-                <Text style={styles.emptyTitle}>No tienes cartas en tu inventario</Text>
-                <Text style={styles.emptySub}>
+                <Ionicons name="basketball-outline" size={48} color={colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No tienes cartas en tu inventario</Text>
+                <Text style={[styles.emptySub, { color: colors.textMuted }]}>
                   Abre sobres en la tienda o selecciona la pestaña de "Tiradores All-Star" para jugar de inmediato.
                 </Text>
                 <TouchableOpacity
@@ -499,11 +509,11 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                       key={`${player.id}-${index}`}
                       activeOpacity={0.85}
                       onPress={() => handleStartContest(player)}
-                      style={styles.shooterCard}
+                      style={[styles.shooterCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
                     >
                       {/* Rank Indicator */}
                       <View style={styles.rankBadge}>
-                        <Text style={styles.rankBadgeText}>#{index + 1}</Text>
+                        <Text style={[styles.rankBadgeText, { color: colors.textMuted }]}>#{index + 1}</Text>
                       </View>
 
                       {/* Player Image */}
@@ -516,7 +526,7 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                       {/* Player Info */}
                       <View style={styles.shooterInfo}>
                         <View style={styles.shooterNameRow}>
-                          <Text numberOfLines={1} style={styles.shooterName}>
+                          <Text numberOfLines={1} style={[styles.shooterName, { color: colors.text }]}>
                             {player.name}
                           </Text>
                           {count && count > 1 ? (
@@ -526,7 +536,7 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                           ) : null}
                         </View>
 
-                        <Text style={styles.shooterSub}>
+                        <Text style={[styles.shooterSub, { color: colors.textMuted }]}>
                           {player.teamAbbr} · {player.position} · {player.stats.ovr} OVR
                         </Text>
 
@@ -537,15 +547,15 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                       </View>
 
                       {/* Prominent 3PT Stat Box */}
-                      <View style={styles.threePtBox}>
+                      <View style={[styles.threePtBox, { backgroundColor: isDark ? '#450A0A55' : '#FEF2F2', borderColor: isDark ? '#7F1D1D' : '#FCA5A5' }]}>
                         <Text style={styles.threePtLabel}>3PT</Text>
                         <Text style={styles.threePtValue}>{threePt}</Text>
                         <Text style={styles.windowSubText}>Verde: {greenWidth}%</Text>
                       </View>
 
                       {/* Play Action Arrow */}
-                      <View style={styles.actionArrow}>
-                        <Ionicons name="play" size={16} color="#1D428A" />
+                      <View style={[styles.actionArrow, { backgroundColor: isDark ? '#1E3A8A44' : '#EFF6FF' }]}>
+                        <Ionicons name="play" size={16} color={isDark ? '#38BDF8' : '#1D428A'} />
                       </View>
                     </TouchableOpacity>
                   );
@@ -779,7 +789,7 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
         {/* 3. CONTEST RESULT MODAL */}
         {gameState === 'RESULT' && selectedPlayer && (
           <View style={styles.resultContainer}>
-            <View style={styles.resultCard}>
+            <View style={[styles.resultCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               <View style={styles.resultTrophyWrap}>
                 <Ionicons
                   name={score >= 20 ? 'trophy' : score >= 10 ? 'medal' : 'ribbon'}
@@ -795,7 +805,7 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                 </View>
               )}
 
-              <Text style={styles.resultTitle}>
+              <Text style={[styles.resultTitle, { color: colors.text }]}>
                 {score >= 25
                   ? '¡CAMPEÓN DEL ALL-STAR!'
                   : score >= 20
@@ -807,7 +817,7 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                   : '¡SIGUE PRACTICANDO!'}
               </Text>
 
-              <Text style={styles.resultShooterName}>Tirador: {selectedPlayer.name}</Text>
+              <Text style={[styles.resultShooterName, { color: colors.textMuted }]}>Tirador: {selectedPlayer.name}</Text>
 
               {/* Big Score Box */}
               <View style={styles.resultScoreBox}>
@@ -816,9 +826,9 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
               </View>
 
               {/* Coin Reward Banner */}
-              <View style={styles.rewardBanner}>
+              <View style={[styles.rewardBanner, { backgroundColor: isDark ? '#78350F33' : '#FEF3C7', borderColor: '#F59E0B' }]}>
                 <Ionicons name="cash" size={20} color="#F59E0B" style={{ marginRight: 8 }} />
-                <Text style={styles.rewardBannerText}>
+                <Text style={[styles.rewardBannerText, { color: isDark ? '#FDE047' : '#92400E' }]}>
                   Recompensa: <Text style={{ fontWeight: '800' }}>+{rewardCoinsEarned()} Monedas</Text>
                 </Text>
               </View>
@@ -828,9 +838,9 @@ export const ThreePointContestScreen: React.FC<ThreePointContestProps> = ({
                 {RACKS.map((r, i) => {
                   const hits = rackScores[i].filter(Boolean).length;
                   return (
-                    <View key={r.id} style={styles.breakdownItem}>
-                      <Text style={styles.breakdownLabel}>{r.shortName}</Text>
-                      <Text style={styles.breakdownVal}>{hits}/5</Text>
+                    <View key={r.id} style={[styles.breakdownItem, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
+                      <Text style={[styles.breakdownLabel, { color: colors.textMuted }]}>{r.shortName}</Text>
+                      <Text style={[styles.breakdownVal, { color: colors.text }]}>{hits}/5</Text>
                     </View>
                   );
                 })}

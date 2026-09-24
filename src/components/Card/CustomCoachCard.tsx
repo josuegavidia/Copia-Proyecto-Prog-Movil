@@ -151,17 +151,24 @@ export const CustomCoachCard: React.FC<CustomCoachCardProps> = ({
           },
         ]}
       >
-        <Text
-          numberOfLines={1}
-          style={[
-            styles.coachName,
-            size === 'sm' && styles.coachNameSm,
-            size === 'lg' && styles.coachNameLg,
-            { color: textColor },
-          ]}
-        >
-          {coach.name}
-        </Text>
+        <View style={styles.coachNameRow}>
+          {coach.countryFlag ? (
+            <Text style={[styles.coachFlag, size === 'sm' && { fontSize: 10 }, size === 'lg' && { fontSize: 16 }]}>
+              {coach.countryFlag}{' '}
+            </Text>
+          ) : null}
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.coachName,
+              size === 'sm' && styles.coachNameSm,
+              size === 'lg' && styles.coachNameLg,
+              { color: textColor },
+            ]}
+          >
+            {coach.name}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -273,7 +280,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 5,
     alignItems: 'center',
+    justifyContent: 'center',
     borderTopWidth: 1.5,
+  },
+  coachNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coachFlag: {
+    fontSize: 12,
   },
   coachName: {
     fontSize: 12,

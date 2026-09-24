@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SquadLineup, SeasonProgress, TeamStanding, Conference, LeagueDifficulty, NBAPlayer, ClassicTeam } from '../types';
 import { NBA_TEAMS } from '../data/nbaTeams';
 import { ACTIVE_NBA_PLAYERS } from '../data/nbaPlayers';
@@ -22,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { recordSeasonWon, earnCoins } from '../store/slices/squadSlice';
 import { ThreePointContestScreen } from './ThreePointContestScreen';
+import { useTheme } from '../context/ThemeContext';
 
 interface GamesScreenProps {
   lineup?: SquadLineup;
@@ -126,6 +128,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
   onCoinsEarned,
 }) => {
   const dispatch = useAppDispatch();
+  const navigation = useNavigation<any>();
   const reduxLineup = useAppSelector((state) => state.squad.lineup);
   const lineup = propsLineup || reduxLineup;
 
@@ -137,17 +140,21 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
     }
   };
 
+  const isLineupComplete = Boolean(lineup.pg && lineup.sg && lineup.sf && lineup.pf && lineup.c);
+  const filledLineupCount = [lineup.pg, lineup.sg, lineup.sf, lineup.pf, lineup.c].filter(Boolean).length;
+
   const [currentMode, setCurrentMode] = useState<ModeTab>('SEASON');
   const [season, setSeason] = useState<SeasonProgress | null>(null);
   const [leagueDifficulty, setLeagueDifficulty] = useState<LeagueDifficulty>('HARD');
   const [teamName, setTeamName] = useState<string>('Tu Quinteto');
   const [teamLogo, setTeamLogo] = useState<string>('https://a.espncdn.com/i/teamlogos/nba/500/lal.png');
+  const [teamAbbr, setTeamAbbr] = useState<string>('LAL');
   const [standingsConf, setStandingsConf] = useState<Conference | 'ALL'>('ALL');
   
-  // Quick Match State
+  // Quick Match State (todas las 30 franquicias de la NBA disponibles para práctica)
   const [quickCategory, setQuickCategory] = useState<QuickMatchCategory>('FRANCHISES');
   const teamsArray = Object.values(NBA_TEAMS);
-  const [selectedOpponentAbbr, setSelectedOpponentAbbr] = useState<string>('NYK');
+  const [selectedOpponentAbbr, setSelectedOpponentAbbr] = useState<string>('BOS');
   const [selectedClassicTeamId, setSelectedClassicTeamId] = useState<string>(CLASSIC_TEAMS[0].id);
   const [quickDifficulty, setQuickDifficulty] = useState<LeagueDifficulty>('HARD');
   
@@ -175,45 +182,57 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
 
   const synergy = calculateSquadSynergy(lineup);
   const cards = useAppSelector((state) => state.squad.cards);
+  const { colors, isDark } = useTheme();
   const [threePointModalVisible, setThreePointModalVisible] = useState(false);
   const [contestRecord, setContestRecord] = useState<{ score: number; shooterName: string }>({
     score: 0,
     shooterName: 'Ninguno',
   });
 
-  useEffect(() => {
-    const loadSeason = async () => {
-      const savedName = await StorageService.getTeamName();
-      const savedLogo = await StorageService.getTeamLogo();
-      setTeamName(savedName);
-      setTeamLogo(savedLogo);
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const loadSeason = async () => {
+        const savedName = await StorageService.getTeamName();
+        const savedLogo = await StorageService.getTeamLogo();
+        const savedAbbr = await StorageService.getTeamAbbr();
+        if (!isMounted) return;
+        setTeamName(savedName);
+        setTeamLogo(savedLogo);
+        setTeamAbbr(savedAbbr);
 
-      const loadedRecord = await StorageService.getThreePointHighScore();
-      setContestRecord(loadedRecord);
+        const loadedRecord = await StorageService.getThreePointHighScore();
+        if (!isMounted) return;
+        setContestRecord(loadedRecord);
 
-      const loaded = await StorageService.getSeason();
-      if (loaded) {
-        setSeason(loaded);
-        if (loaded.difficulty) {
-          setLeagueDifficulty(loaded.difficulty);
+        const loaded = await StorageService.getSeason();
+        if (!isMounted) return;
+        if (loaded) {
+          setSeason(loaded);
+          if (loaded.difficulty) {
+            setLeagueDifficulty(loaded.difficulty);
+          }
         }
-      }
 
-      if (loaded && loaded.isCompleted && !loaded.rewardClaimed) {
-        const sorted = sortStandingsList(loaded.standings, 'ALL');
-        const rank = sorted.findIndex((t) => t.isUserTeam) + 1 || 1;
-        const userTeam = loaded.standings.find((t) => t.isUserTeam);
-        setSeasonEndData({
-          rank,
-          reward: getSeasonRewardTier(rank),
-          seasonNumber: loaded.seasonNumber || 1,
-          wins: userTeam?.wins || 0,
-          losses: userTeam?.losses || 0,
-        });
-      }
-    };
-    loadSeason();
-  }, []);
+        if (loaded && loaded.isCompleted && !loaded.rewardClaimed) {
+          const sorted = sortStandingsList(loaded.standings, 'ALL');
+          const rank = sorted.findIndex((t) => t.isUserTeam) + 1 || 1;
+          const userTeam = loaded.standings.find((t) => t.isUserTeam);
+          setSeasonEndData({
+            rank,
+            reward: getSeasonRewardTier(rank),
+            seasonNumber: loaded.seasonNumber || 1,
+            wins: userTeam?.wins || 0,
+            losses: userTeam?.losses || 0,
+          });
+        }
+      };
+      loadSeason();
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
 
   const handleChangeLeagueDifficulty = async (diff: LeagueDifficulty) => {
     await HapticsService.selectionTick();
@@ -250,6 +269,32 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
     oppSubtitle: string,
     isSeason: boolean
   ) => {
+    // Validar que el quinteto esté completo con los 5 jugadores titulares
+    if (!lineup.pg || !lineup.sg || !lineup.sf || !lineup.pf || !lineup.c) {
+      const missing: string[] = [];
+      if (!lineup.pg) missing.push('Base (PG)');
+      if (!lineup.sg) missing.push('Escolta (SG)');
+      if (!lineup.sf) missing.push('Alero (SF)');
+      if (!lineup.pf) missing.push('Ala-Pívot (PF)');
+      if (!lineup.c) missing.push('Pívot (C)');
+
+      await HapticsService.errorNotification();
+      Alert.alert(
+        'Quinteto Incompleto',
+        `Para disputar partidos y simular tu temporada debes completar tu quinteto titular con 5 jugadores.\n\nTienes ${filledLineupCount}/5 titulares asignados.\n\nFaltan por colocar:\n• ${missing.join('\n• ')}\n\nVe a la pestaña "Quinteto" para asignar jugadores a cada posición o abre sobres para conseguir nuevas cartas.`,
+        [
+          {
+            text: 'Ir a Quinteto',
+            onPress: () => {
+              navigation.navigate('Squad' as never);
+            },
+          },
+          { text: 'Entendido', style: 'cancel' },
+        ]
+      );
+      return;
+    }
+
     setSimOpponentName(oppName);
     setSimOpponentLogo(oppLogo);
     setSimOpponentOvr(oppOvr);
@@ -395,7 +440,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
         finalRank: isSeasonEnd ? finalUserRank : undefined,
         rewardClaimed: false,
         historyLogs: [
-          `Jornada ${season.currentMatchIndex}: Tu Equipo ${curMy} - ${curOpp} ${oppName} [${oppSubtitle}] (${won ? 'VICTORIA' : 'DERROTA'})`,
+          `Jornada ${season.currentMatchIndex}: ${teamName} ${curMy} - ${curOpp} ${oppName} [${oppSubtitle}] (${won ? 'VICTORIA' : 'DERROTA'})`,
           ...season.historyLogs,
         ],
       };
@@ -459,12 +504,11 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
     return sortStandingsList(season.standings, standingsConf);
   };
 
-  // Next Season Opponent calculations
+  // Next Season Opponent calculations (las 30 franquicias oficiales de la NBA)
   const getNextSeasonOpponent = () => {
-    const oppAbbrs = Object.keys(NBA_TEAMS);
-    const index = ((season?.currentMatchIndex || 1) - 1) % oppAbbrs.length;
-    const abbr = oppAbbrs[index];
-    return NBA_TEAMS[abbr] || NBA_TEAMS.BOS;
+    const oppList = Object.values(NBA_TEAMS);
+    const index = ((season?.currentMatchIndex || 1) - 1) % oppList.length;
+    return oppList[index] || NBA_TEAMS.BOS;
   };
 
   const nextSeasonOpponent = getNextSeasonOpponent();
@@ -476,20 +520,21 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
   const selectedClassicTeam = CLASSIC_TEAMS.find((t) => t.id === selectedClassicTeamId) || CLASSIC_TEAMS[0];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top Mode Selector Tabs & Info Button */}
-      <View style={styles.topTabs}>
+      <View style={[styles.topTabs, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => {
             HapticsService.selectionTick();
             setCurrentMode('SEASON');
           }}
-          style={[styles.topTab, currentMode === 'SEASON' && styles.topTabActive]}
+          style={[styles.topTab, { backgroundColor: colors.bgCardSecondary }, currentMode === 'SEASON' && styles.topTabActive]}
         >
-          <Ionicons name="trophy" size={15} color={currentMode === 'SEASON' ? '#FFFFFF' : '#64748B'} style={{ marginRight: 6 }} />
+          <Ionicons name="trophy" size={15} color={currentMode === 'SEASON' ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 6 }} />
           <Text
             style={[
               styles.topTabText,
+              { color: colors.textMuted },
               currentMode === 'SEASON' && styles.topTabTextActive,
             ]}
           >
@@ -502,12 +547,13 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
             HapticsService.selectionTick();
             setCurrentMode('QUICK');
           }}
-          style={[styles.topTab, currentMode === 'QUICK' && styles.topTabActive]}
+          style={[styles.topTab, { backgroundColor: colors.bgCardSecondary }, currentMode === 'QUICK' && styles.topTabActive]}
         >
-          <Ionicons name="flash" size={15} color={currentMode === 'QUICK' ? '#FFFFFF' : '#64748B'} style={{ marginRight: 5 }} />
+          <Ionicons name="flash" size={15} color={currentMode === 'QUICK' ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 5 }} />
           <Text
             style={[
               styles.topTabText,
+              { color: colors.textMuted },
               currentMode === 'QUICK' && styles.topTabTextActive,
             ]}
           >
@@ -520,12 +566,13 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
             HapticsService.selectionTick();
             setCurrentMode('TRIPLES');
           }}
-          style={[styles.topTab, currentMode === 'TRIPLES' && styles.topTabActiveTriples]}
+          style={[styles.topTab, { backgroundColor: colors.bgCardSecondary }, currentMode === 'TRIPLES' && styles.topTabActiveTriples]}
         >
           <Ionicons name="flame" size={15} color={currentMode === 'TRIPLES' ? '#FFFFFF' : '#DC2626'} style={{ marginRight: 5 }} />
           <Text
             style={[
               styles.topTabText,
+              { color: colors.textMuted },
               currentMode === 'TRIPLES' && styles.topTabTextActive,
             ]}
           >
@@ -540,7 +587,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
           }}
           style={styles.infoTopBtn}
         >
-          <Ionicons name="information-circle-outline" size={15} color="#006BB6" />
+          <Ionicons name="information-circle-outline" size={15} color={isDark ? '#38BDF8' : '#006BB6'} />
         </TouchableOpacity>
       </View>
 
@@ -552,11 +599,11 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
         {currentMode === 'SEASON' && season && (
           <View>
             {/* Season Fixture Card */}
-            <View style={styles.fixtureCard}>
+            <View style={[styles.fixtureCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               <View style={styles.fixtureHeader}>
                 <View style={styles.fixtureHeaderLeft}>
                   <Ionicons name="trophy" size={16} color="#CA8A04" style={{ marginRight: 6 }} />
-                  <Text style={styles.fixtureTitle}>
+                  <Text style={[styles.fixtureTitle, { color: colors.text }]}>
                     {season.isCompleted
                       ? `TEMPORADA NBA #${season.seasonNumber} · COMPLETADA`
                       : `TEMPORADA NBA #${season.seasonNumber} · JORNADA ${season.currentMatchIndex} DE 30`}
@@ -567,19 +614,20 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                   onPress={handleResetSeason}
                   style={styles.resetBtn}
                 >
-                  <Ionicons name="refresh" size={14} color="#64748B" />
+                  <Ionicons name="refresh" size={14} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
               {/* Dificultad Selector: Titulares (Difícil) vs Suplentes (Medio) */}
-              <View style={styles.difficultyPickerBox}>
-                <Text style={styles.difficultyPickerLabel}>NIVEL DE DIFICULTAD DE LA LIGA:</Text>
+              <View style={[styles.difficultyPickerBox, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
+                <Text style={[styles.difficultyPickerLabel, { color: colors.textMuted }]}>NIVEL DE DIFICULTAD DE LA LIGA:</Text>
                 <View style={styles.difficultyButtonsRow}>
                   <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => handleChangeLeagueDifficulty('HARD')}
                     style={[
                       styles.diffPill,
+                      { backgroundColor: colors.bgCard, borderColor: colors.border },
                       leagueDifficulty === 'HARD' && styles.diffPillActiveHard,
                     ]}
                   >
@@ -587,6 +635,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                     <Text
                       style={[
                         styles.diffPillText,
+                        { color: colors.textMuted },
                         leagueDifficulty === 'HARD' && styles.diffPillTextActive,
                       ]}
                     >
@@ -599,6 +648,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                     onPress={() => handleChangeLeagueDifficulty('MEDIUM')}
                     style={[
                       styles.diffPill,
+                      { backgroundColor: colors.bgCard, borderColor: colors.border },
                       leagueDifficulty === 'MEDIUM' && styles.diffPillActiveMedium,
                     ]}
                   >
@@ -606,6 +656,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                     <Text
                       style={[
                         styles.diffPillText,
+                        { color: colors.textMuted },
                         leagueDifficulty === 'MEDIUM' && styles.diffPillTextActive,
                       ]}
                     >
@@ -617,13 +668,13 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
 
               {season.isCompleted ? (
                 <View style={styles.seasonCompletedCard}>
-                  <View style={styles.seasonCompletedIconWrap}>
+                  <View style={[styles.seasonCompletedIconWrap, { backgroundColor: isDark ? '#78350F44' : '#FEF3C7' }]}>
                     <Ionicon name="trophy" size={28} color="#F59E0B" />
                   </View>
-                  <Text style={styles.seasonCompletedTitle}>
+                  <Text style={[styles.seasonCompletedTitle, { color: colors.text }]}>
                     ¡TEMPORADA #{season.seasonNumber} COMPLETADA!
                   </Text>
-                  <Text style={styles.seasonCompletedSub}>
+                  <Text style={[styles.seasonCompletedSub, { color: colors.textMuted }]}>
                     Has jugado los 30 partidos oficiales de la temporada regular contra todas las franquicias.
                   </Text>
                 </View>
@@ -636,8 +687,8 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                         style={styles.rivalLogo}
                         resizeMode="contain"
                       />
-                      <Text numberOfLines={1} style={styles.teamBoxLabel}>{teamName.toUpperCase()}</Text>
-                      <Text style={styles.teamBoxOvr}>{synergy.totalOvr} OVR</Text>
+                      <Text numberOfLines={1} style={[styles.teamBoxLabel, { color: colors.text }]}>{teamName.toUpperCase()}</Text>
+                      <Text style={[styles.teamBoxOvr, { color: isDark ? '#38BDF8' : '#006BB6' }]}>{synergy.totalOvr} OVR</Text>
                       <Text style={styles.teamBoxChem}>Química: {synergy.teamChemistry}%</Text>
                     </View>
 
@@ -649,25 +700,48 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                         style={styles.rivalLogo}
                         resizeMode="contain"
                       />
-                      <Text numberOfLines={1} style={styles.teamBoxName}>
+                      <Text numberOfLines={1} style={[styles.teamBoxName, { color: colors.text }]}>
                         {nextSeasonOpponent.name}
                       </Text>
                       <Text style={[styles.teamBoxOvr, { color: leagueDifficulty === 'HARD' ? '#EF4444' : '#0284C7' }]}>
                         {nextSeasonUnitInfo.ovr} OVR
                       </Text>
-                      <Text style={styles.unitTagSmall}>{nextSeasonUnitInfo.label}</Text>
+                      <Text style={[styles.unitTagSmall, { color: colors.textMuted }]}>{nextSeasonUnitInfo.label}</Text>
                     </View>
                   </View>
 
                   {/* Rival Unit Player Lineup Preview */}
-                  <View style={styles.lineupPreviewBar}>
-                    <Text style={styles.lineupPreviewTitle}>
+                  <View style={[styles.lineupPreviewBar, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border, borderWidth: 1 }]}>
+                    <Text style={[styles.lineupPreviewTitle, { color: colors.textMuted }]}>
                       {leagueDifficulty === 'HARD' ? '⭐ 5 TITULARES RIVALES:' : '⚡ 5 SUPLENTES RIVALES:'}
                     </Text>
-                    <Text numberOfLines={1} style={styles.lineupPreviewPlayers}>
+                    <Text numberOfLines={1} style={[styles.lineupPreviewPlayers, { color: colors.text }]}>
                       {nextSeasonUnitInfo.players.map((p) => `${p.name} (${p.stats.ovr})`).join(' · ')}
                     </Text>
                   </View>
+
+                  {/* Warning banner si el quinteto está incompleto */}
+                  {!isLineupComplete && (
+                    <View style={styles.incompleteLineupCard}>
+                      <View style={styles.incompleteLineupHeader}>
+                        <Ionicons name="alert-circle" size={18} color="#DC2626" />
+                        <Text style={styles.incompleteLineupTitle}>
+                          Quinteto Incompleto ({filledLineupCount}/5 Titulares)
+                        </Text>
+                      </View>
+                      <Text style={styles.incompleteLineupSub}>
+                        Debes asignar los 5 titulares (PG, SG, SF, PF, C) en la pestaña Quinteto antes de disputar partidos.
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.incompleteLineupBtn}
+                        onPress={() => navigation.navigate('Squad' as never)}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="shirt" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+                        <Text style={styles.incompleteLineupBtnText}>IR A COMPLETAR MI QUINTETO</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
                   <TouchableOpacity
                     activeOpacity={0.85}
@@ -680,11 +754,14 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                         true
                       )
                     }
-                    style={styles.playSeasonBtn}
+                    style={[
+                      styles.playSeasonBtn,
+                      !isLineupComplete && styles.playSeasonBtnDisabled,
+                    ]}
                   >
                     <Ionicons name="play" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
                     <Text style={styles.playSeasonBtnText}>
-                      ¡JUGAR JORNADA {season.currentMatchIndex} DE 30!
+                      ¡JUGAR JORNADA {season.currentMatchIndex} DE {season.totalMatches || 29}!
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -693,7 +770,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
 
             {/* Standings Filter */}
             <View style={styles.standingsHeaderRow}>
-              <Text style={styles.standingsTitle}>TABLA DE POSICIONES OFICIAL</Text>
+              <Text style={[styles.standingsTitle, { color: colors.text }]}>TABLA DE POSICIONES OFICIAL</Text>
               <View style={styles.confFilterPills}>
                 {(['ALL', 'Eastern', 'Western'] as const).map((conf) => (
                   <TouchableOpacity
@@ -704,12 +781,14 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                     }}
                     style={[
                       styles.confPill,
+                      { backgroundColor: colors.bgCardSecondary },
                       standingsConf === conf && styles.confPillActive,
                     ]}
                   >
                     <Text
                       style={[
                         styles.confPillText,
+                        { color: colors.textMuted },
                         standingsConf === conf && styles.confPillTextActive,
                       ]}
                     >
@@ -721,13 +800,13 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
             </View>
 
             {/* Official NBA Standings Table */}
-            <View style={styles.tableCard}>
-              <View style={styles.tableHeaderRow}>
-                <Text style={[styles.thText, { width: 28 }]}>#</Text>
-                <Text style={[styles.thText, { flex: 1 }]}>EQUIPO</Text>
-                <Text style={[styles.thText, { width: 34, textAlign: 'center' }]}>V</Text>
-                <Text style={[styles.thText, { width: 34, textAlign: 'center' }]}>D</Text>
-                <Text style={[styles.thText, { width: 48, textAlign: 'center' }]}>%V</Text>
+            <View style={[styles.tableCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+              <View style={[styles.tableHeaderRow, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.thText, { width: 28, color: colors.textMuted }]}>#</Text>
+                <Text style={[styles.thText, { flex: 1, color: colors.textMuted }]}>EQUIPO</Text>
+                <Text style={[styles.thText, { width: 34, textAlign: 'center', color: colors.textMuted }]}>V</Text>
+                <Text style={[styles.thText, { width: 34, textAlign: 'center', color: colors.textMuted }]}>D</Text>
+                <Text style={[styles.thText, { width: 48, textAlign: 'center', color: colors.textMuted }]}>%V</Text>
               </View>
 
               {getSortedStandings().map((row, idx) => {
@@ -739,13 +818,15 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                     key={row.isUserTeam ? `user_${row.teamAbbr}` : `team_${row.teamAbbr}`}
                     style={[
                       styles.tableRow,
-                      row.isUserTeam && styles.tableRowUser,
+                      { borderBottomColor: colors.border },
+                      row.isUserTeam && { backgroundColor: isDark ? '#1E3A8A44' : '#EFF6FF' },
                       idx === 7 && styles.playoffCutoffRow,
                     ]}
                   >
                     <Text
                       style={[
                         styles.rankText,
+                        { color: colors.textMuted },
                         row.isUserTeam && styles.userHighlightText,
                       ]}
                     >
@@ -764,6 +845,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                         numberOfLines={1}
                         style={[
                           styles.tableTeamName,
+                          { color: colors.text },
                           row.isUserTeam && styles.userHighlightText,
                         ]}
                       >
@@ -771,9 +853,9 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                       </Text>
                     </View>
 
-                    <Text style={styles.statCell}>{row.wins}</Text>
-                    <Text style={styles.statCell}>{row.losses}</Text>
-                    <Text style={styles.pctCell}>{winPct}</Text>
+                    <Text style={[styles.statCell, { color: colors.text }]}>{row.wins}</Text>
+                    <Text style={[styles.statCell, { color: colors.text }]}>{row.losses}</Text>
+                    <Text style={[styles.pctCell, { color: colors.textMuted }]}>{winPct}</Text>
                   </View>
                 );
               })}
@@ -793,13 +875,15 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                 }}
                 style={[
                   styles.quickSubTab,
+                  { backgroundColor: colors.bgCardSecondary, borderColor: colors.border },
                   quickCategory === 'FRANCHISES' && styles.quickSubTabActive,
                 ]}
               >
-                <Ionicons name="shield" size={14} color={quickCategory === 'FRANCHISES' ? '#FFFFFF' : '#64748B'} style={{ marginRight: 6 }} />
+                <Ionicons name="shield" size={14} color={quickCategory === 'FRANCHISES' ? '#FFFFFF' : colors.textMuted} style={{ marginRight: 6 }} />
                 <Text
                   style={[
                     styles.quickSubTabText,
+                    { color: colors.textMuted },
                     quickCategory === 'FRANCHISES' && styles.quickSubTabTextActive,
                   ]}
                 >
@@ -814,6 +898,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                 }}
                 style={[
                   styles.quickSubTab,
+                  { backgroundColor: colors.bgCardSecondary, borderColor: colors.border },
                   quickCategory === 'LEGENDS' && styles.quickSubTabActiveLegend,
                 ]}
               >
@@ -821,6 +906,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                 <Text
                   style={[
                     styles.quickSubTabText,
+                    { color: colors.textMuted },
                     quickCategory === 'LEGENDS' && styles.quickSubTabTextActiveLegend,
                   ]}
                 >
@@ -830,11 +916,11 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
             </View>
 
             {/* Selected Rival Hero Card */}
-            <View style={styles.quickMatchCard}>
+            <View style={[styles.quickMatchCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
               <View style={styles.matchupBanner}>
                 <View style={styles.teamHeroBox}>
-                  <Text numberOfLines={1} style={styles.teamHeroLabel}>{teamName.toUpperCase()}</Text>
-                  <Text style={styles.teamHeroOvr}>{synergy.totalOvr} OVR</Text>
+                  <Text numberOfLines={1} style={[styles.teamHeroLabel, { color: colors.text }]}>{teamName.toUpperCase()}</Text>
+                  <Text style={[styles.teamHeroOvr, { color: isDark ? '#38BDF8' : '#006BB6' }]}>{synergy.totalOvr} OVR</Text>
                   <Text style={styles.teamHeroChem}>Química {synergy.teamChemistry}%</Text>
                 </View>
 
@@ -846,10 +932,10 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                     style={styles.heroRivalLogo}
                     resizeMode="contain"
                   />
-                  <Text numberOfLines={1} style={styles.teamHeroName}>
+                  <Text numberOfLines={1} style={[styles.teamHeroName, { color: colors.text }]}>
                     {quickCategory === 'FRANCHISES' ? selectedFranchise.name : selectedClassicTeam.name}
                   </Text>
-                  <Text style={[styles.teamHeroOvr, { color: quickCategory === 'LEGENDS' ? '#CA8A04' : '#0F172A' }]}>
+                  <Text style={[styles.teamHeroOvr, { color: quickCategory === 'LEGENDS' ? '#CA8A04' : (isDark ? '#38BDF8' : '#0F172A') }]}>
                     {quickCategory === 'FRANCHISES' ? quickFranchiseUnit.ovr : selectedClassicTeam.ovr} OVR
                   </Text>
                 </View>
@@ -865,10 +951,11 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                     }}
                     style={[
                       styles.quickUnitPill,
+                      { backgroundColor: colors.bgCardSecondary, borderColor: colors.border },
                       quickDifficulty === 'HARD' && styles.quickUnitPillActiveHard,
                     ]}
                   >
-                    <Text style={[styles.quickUnitText, quickDifficulty === 'HARD' && styles.quickUnitTextActive]}>
+                    <Text style={[styles.quickUnitText, { color: colors.textMuted }, quickDifficulty === 'HARD' && styles.quickUnitTextActive]}>
                       Titulares (Difícil)
                     </Text>
                   </TouchableOpacity>
@@ -880,10 +967,11 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                     }}
                     style={[
                       styles.quickUnitPill,
+                      { backgroundColor: colors.bgCardSecondary, borderColor: colors.border },
                       quickDifficulty === 'MEDIUM' && styles.quickUnitPillActiveMed,
                     ]}
                   >
-                    <Text style={[styles.quickUnitText, quickDifficulty === 'MEDIUM' && styles.quickUnitTextActive]}>
+                    <Text style={[styles.quickUnitText, { color: colors.textMuted }, quickDifficulty === 'MEDIUM' && styles.quickUnitTextActive]}>
                       Suplentes (Medio)
                     </Text>
                   </TouchableOpacity>
@@ -891,16 +979,39 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
               )}
 
               {/* Starters Preview */}
-              <View style={styles.quickStartersRow}>
-                <Text style={styles.quickStartersLabel}>
+              <View style={[styles.quickStartersRow, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
+                <Text style={[styles.quickStartersLabel, { color: colors.textMuted }]}>
                   {quickCategory === 'LEGENDS' ? 'QUINTETO TITULAR HISTÓRICO:' : `5 ${quickDifficulty === 'HARD' ? 'TITULARES' : 'SUPLENTES'}:`}
                 </Text>
-                <Text numberOfLines={2} style={styles.quickStartersText}>
+                <Text numberOfLines={2} style={[styles.quickStartersText, { color: colors.text }]}>
                   {quickCategory === 'LEGENDS'
                     ? selectedClassicTeam.starters.map((p) => `${p.name} (${p.stats.ovr})`).join(' · ')
                     : quickFranchiseUnit.players.map((p) => `${p.name} (${p.stats.ovr})`).join(' · ')}
                 </Text>
               </View>
+
+              {/* Warning banner si el quinteto está incompleto */}
+              {!isLineupComplete && (
+                <View style={styles.incompleteLineupCard}>
+                  <View style={styles.incompleteLineupHeader}>
+                    <Ionicons name="alert-circle" size={18} color="#DC2626" />
+                    <Text style={styles.incompleteLineupTitle}>
+                      Quinteto Incompleto ({filledLineupCount}/5 Titulares)
+                    </Text>
+                  </View>
+                  <Text style={styles.incompleteLineupSub}>
+                    Debes asignar los 5 titulares (PG, SG, SF, PF, C) en la pestaña Quinteto antes de disputar partidos de práctica.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.incompleteLineupBtn}
+                    onPress={() => navigation.navigate('Squad' as never)}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="shirt" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.incompleteLineupBtnText}>IR A COMPLETAR MI QUINTETO</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
               <TouchableOpacity
                 activeOpacity={0.85}
@@ -916,6 +1027,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                 style={[
                   styles.startQuickMatchBtn,
                   quickCategory === 'LEGENDS' && styles.startQuickMatchBtnLegend,
+                  !isLineupComplete && styles.playSeasonBtnDisabled,
                 ]}
               >
                 <Ionicons name="play" size={16} color={quickCategory === 'LEGENDS' ? '#713F12' : '#FFFFFF'} style={{ marginRight: 6 }} />
@@ -933,7 +1045,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
             {/* List Selection for FRANCHISES */}
             {quickCategory === 'FRANCHISES' && (
               <View>
-                <Text style={styles.allTeamsHeading}>TODAS LAS FRANQUICIAS NBA (2026-27)</Text>
+                <Text style={[styles.allTeamsHeading, { color: colors.text }]}>TODAS LAS FRANQUICIAS NBA (2026-27)</Text>
                 <View style={styles.teamsGrid}>
                   {teamsArray.map((team) => {
                     const isSelected = selectedOpponentAbbr === team.abbreviation;
@@ -948,6 +1060,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                         }}
                         style={[
                           styles.teamGridCard,
+                          { backgroundColor: colors.bgCard, borderColor: colors.border },
                           isSelected && styles.teamGridCardActive,
                         ]}
                       >
@@ -956,10 +1069,10 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                           style={styles.teamGridLogo}
                           resizeMode="contain"
                         />
-                        <Text numberOfLines={1} style={styles.teamGridName}>
+                        <Text numberOfLines={1} style={[styles.teamGridName, { color: colors.text }]}>
                           {team.name}
                         </Text>
-                        <Text style={styles.teamGridOvr}>{unit.ovr} OVR</Text>
+                        <Text style={[styles.teamGridOvr, { color: colors.textMuted }]}>{unit.ovr} OVR</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -970,7 +1083,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
             {/* List Selection for LEGEND CLASSIC TEAMS */}
             {quickCategory === 'LEGENDS' && (
               <View>
-                <Text style={styles.allTeamsHeading}>QUINTETOS HISTÓRICOS & LEYENDAS NBA 2K</Text>
+                <Text style={[styles.allTeamsHeading, { color: colors.text }]}>QUINTETOS HISTÓRICOS & LEYENDAS NBA 2K</Text>
                 <View style={styles.classicTeamsGrid}>
                   {CLASSIC_TEAMS.map((ct) => {
                     const isSelected = selectedClassicTeamId === ct.id;
@@ -985,6 +1098,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                         }}
                         style={[
                           styles.classicTeamCard,
+                          { backgroundColor: colors.bgCard, borderColor: colors.border },
                           isSelected && styles.classicTeamCardActive,
                         ]}
                       >
@@ -995,10 +1109,10 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                             resizeMode="contain"
                           />
                           <View style={styles.classicMeta}>
-                            <Text numberOfLines={1} style={styles.classicTeamName}>
+                            <Text numberOfLines={1} style={[styles.classicTeamName, { color: colors.text }]}>
                               {ct.name}
                             </Text>
-                            <Text style={styles.classicTeamYear}>
+                            <Text style={[styles.classicTeamYear, { color: colors.textMuted }]}>
                               Año: {ct.year} · {ct.franchise}
                             </Text>
                           </View>
@@ -1008,14 +1122,14 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                           </View>
                         </View>
 
-                        <Text numberOfLines={2} style={styles.classicDesc}>
+                        <Text numberOfLines={2} style={[styles.classicDesc, { color: colors.textMuted }]}>
                           {ct.description}
                         </Text>
 
                         <View style={styles.classicStartersPills}>
                           {ct.starters.map((s, idx) => (
-                            <View key={idx} style={styles.classicStarterChip}>
-                              <Text numberOfLines={1} style={styles.classicStarterChipText}>
+                            <View key={idx} style={[styles.classicStarterChip, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
+                              <Text numberOfLines={1} style={[styles.classicStarterChipText, { color: colors.text }]}>
                                 {s.name.split(' ').pop()} {s.stats.ovr}
                               </Text>
                             </View>
@@ -1032,57 +1146,57 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
 
         {/* MODE 3: CONCURSO DE TRIPLES ALL-STAR */}
         {currentMode === 'TRIPLES' && (
-          <View style={styles.triplesHubCard}>
+          <View style={[styles.triplesHubCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
             <View style={styles.triplesHubHeader}>
               <View style={styles.triplesBadge}>
                 <Ionicons name="flame" size={14} color="#EF4444" style={{ marginRight: 4 }} />
                 <Text style={styles.triplesBadgeText}>MINIJUEGO ALL-STAR OFICIAL</Text>
               </View>
-              <Text style={styles.triplesHubTitle}>Torneo de Triples 3PT Contest</Text>
-              <Text style={styles.triplesHubDesc}>
+              <Text style={[styles.triplesHubTitle, { color: colors.text }]}>Torneo de Triples 3PT Contest</Text>
+              <Text style={[styles.triplesHubDesc, { color: colors.textMuted }]}>
                 Pon a prueba la puntería de tus mejores francotiradores. Los tiradores se filtran y ordenan automáticamente de mayor a menor según su estadística de Triples (3PT).
               </Text>
             </View>
 
             {/* High score badge & specs */}
-            <View style={styles.triplesStatsBox}>
+            <View style={[styles.triplesStatsBox, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
               <View style={styles.triplesStatItem}>
                 <Ionicons name="trophy" size={26} color="#F59E0B" />
-                <Text style={styles.triplesStatLabel}>RÉCORD ACTUAL</Text>
-                <Text style={styles.triplesStatVal}>{contestRecord.score} PTS</Text>
+                <Text style={[styles.triplesStatLabel, { color: colors.textMuted }]}>RÉCORD ACTUAL</Text>
+                <Text style={[styles.triplesStatVal, { color: colors.text }]}>{contestRecord.score} PTS</Text>
                 <Text numberOfLines={1} style={styles.triplesStatSub}>
                   {contestRecord.shooterName}
                 </Text>
               </View>
 
-              <View style={styles.triplesStatDivider} />
+              <View style={[styles.triplesStatDivider, { backgroundColor: colors.border }]} />
 
               <View style={styles.triplesStatItem}>
                 <Ionicons name="basketball" size={26} color="#EA580C" />
-                <Text style={styles.triplesStatLabel}>ESTRUCTURA</Text>
-                <Text style={styles.triplesStatVal}>5 RACKS</Text>
+                <Text style={[styles.triplesStatLabel, { color: colors.textMuted }]}>ESTRUCTURA</Text>
+                <Text style={[styles.triplesStatVal, { color: colors.text }]}>5 RACKS</Text>
                 <Text style={styles.triplesStatSub}>25 Tiros · 30 Pts Max</Text>
               </View>
             </View>
 
             {/* Feature points */}
-            <View style={styles.triplesFeaturesList}>
+            <View style={[styles.triplesFeaturesList, { backgroundColor: isDark ? '#1E293B' : '#EFF6FF', borderColor: colors.border }]}>
               <View style={styles.triplesFeatureRow}>
                 <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8, marginTop: 1 }} />
-                <Text style={styles.triplesFeatureText}>
-                  <Text style={{ fontWeight: '800', color: '#0F172A' }}>Filtrado descendente:</Text> Selecciona entre tus cartas o leyendas All-Star ordenadas estrictamente por su atributo de 3PT.
+                <Text style={[styles.triplesFeatureText, { color: colors.text }]}>
+                  <Text style={{ fontWeight: '800', color: isDark ? '#60A5FA' : '#0F172A' }}>Filtrado descendente:</Text> Selecciona entre tus cartas o leyendas All-Star ordenadas estrictamente por su atributo de 3PT.
                 </Text>
               </View>
               <View style={styles.triplesFeatureRow}>
                 <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8, marginTop: 1 }} />
-                <Text style={styles.triplesFeatureText}>
-                  <Text style={{ fontWeight: '800', color: '#0F172A' }}>Green Release:</Text> A mayor 3PT rating (ej. Curry 99, Klay 98), más amplia y generosa es la ventana verde.
+                <Text style={[styles.triplesFeatureText, { color: colors.text }]}>
+                  <Text style={{ fontWeight: '800', color: isDark ? '#60A5FA' : '#0F172A' }}>Green Release:</Text> A mayor 3PT rating (ej. Curry 99, Klay 98), más amplia y generosa es la ventana verde.
                 </Text>
               </View>
               <View style={styles.triplesFeatureRow}>
                 <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8, marginTop: 1 }} />
-                <Text style={styles.triplesFeatureText}>
-                  <Text style={{ fontWeight: '800', color: '#0F172A' }}>Money Balls:</Text> El último balón de cada rack otorga 2 puntos bonus.
+                <Text style={[styles.triplesFeatureText, { color: colors.text }]}>
+                  <Text style={{ fontWeight: '800', color: isDark ? '#60A5FA' : '#0F172A' }}>Money Balls:</Text> El último balón de cada rack otorga 2 puntos bonus.
                 </Text>
               </View>
             </View>
@@ -1106,11 +1220,11 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
       {/* LIVE MATCH SIMULATION MODAL */}
       <Modal visible={isSimulating} transparent animationType="fade">
         <View style={styles.simModalOverlay}>
-          <View style={styles.simModalBox}>
+          <View style={[styles.simModalBox, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.simHeader}>
               <View style={styles.simHeaderTitleWrap}>
                 <Ionicons name="flash" size={18} color="#0284C7" style={{ marginRight: 6 }} />
-                <Text style={styles.simHeaderTitle}>
+                <Text style={[styles.simHeaderTitle, { color: colors.text }]}>
                   {isSeasonMatch ? 'PARTIDO DE TEMPORADA' : 'PARTIDO DE EXHIBICIÓN'}
                 </Text>
               </View>
@@ -1119,7 +1233,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                   onPress={() => setIsSimulating(false)}
                   style={styles.closeSimBtn}
                 >
-                  <Ionicons name="close" size={18} color="#64748B" />
+                  <Ionicons name="close" size={18} color={colors.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -1146,12 +1260,12 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
             </View>
 
             {/* Quarter Logs */}
-            <View style={styles.simLogsContainer}>
+            <View style={[styles.simLogsContainer, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
               {quarterLogs.map((log, index) => (
                 <View key={index} style={styles.simLogRow}>
-                  <Ionicon name={log.icon} size={14} color="#006BB6" />
-                  <Text style={styles.simLogText}>
-                    Cuarto {log.quarter}: Tu Equipo {log.myQ} - {log.oppQ} {log.oppName} ({log.note})
+                  <Ionicon name={log.icon} size={14} color={isDark ? '#38BDF8' : '#006BB6'} />
+                  <Text style={[styles.simLogText, { color: colors.text }]}>
+                    Cuarto {log.quarter}: {teamName} {log.myQ} - {log.oppQ} {log.oppName} ({log.note})
                   </Text>
                 </View>
               ))}
@@ -1195,7 +1309,7 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
       {/* SEASON END AWARDS CEREMONY MODAL */}
       <Modal visible={seasonEndModalVisible} transparent animationType="slide">
         <View style={styles.seasonEndOverlay}>
-          <View style={styles.seasonEndCard}>
+          <View style={[styles.seasonEndCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
             {seasonEndData && (
               <>
                 <View
@@ -1218,46 +1332,46 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
                   </Text>
                 </View>
 
-                <Text style={styles.seasonEndMainTitle}>
+                <Text style={[styles.seasonEndMainTitle, { color: colors.text }]}>
                   {seasonEndData.reward.title}
                 </Text>
 
-                <Text style={styles.seasonEndDesc}>
+                <Text style={[styles.seasonEndDesc, { color: colors.textMuted }]}>
                   {seasonEndData.reward.description}
                 </Text>
 
-                <View style={styles.seasonStatsBox}>
+                <View style={[styles.seasonStatsBox, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
                   <View style={styles.seasonStatItem}>
-                    <Text style={styles.seasonStatLabel}>POSICIÓN</Text>
+                    <Text style={[styles.seasonStatLabel, { color: colors.textMuted }]}>POSICIÓN</Text>
                     <Text style={[styles.seasonStatVal, { color: seasonEndData.reward.color }]}>
                       #{seasonEndData.rank} / 31
                     </Text>
                   </View>
 
-                  <View style={styles.seasonStatDivider} />
+                  <View style={[styles.seasonStatDivider, { backgroundColor: colors.border }]} />
 
                   <View style={styles.seasonStatItem}>
-                    <Text style={styles.seasonStatLabel}>BALANCE</Text>
-                    <Text style={styles.seasonStatVal}>
+                    <Text style={[styles.seasonStatLabel, { color: colors.textMuted }]}>BALANCE</Text>
+                    <Text style={[styles.seasonStatVal, { color: colors.text }]}>
                       {seasonEndData.wins}V - {seasonEndData.losses}D
                     </Text>
                   </View>
 
-                  <View style={styles.seasonStatDivider} />
+                  <View style={[styles.seasonStatDivider, { backgroundColor: colors.border }]} />
 
                   <View style={styles.seasonStatItem}>
-                    <Text style={styles.seasonStatLabel}>TEMPORADA</Text>
-                    <Text style={styles.seasonStatVal}>
+                    <Text style={[styles.seasonStatLabel, { color: colors.textMuted }]}>TEMPORADA</Text>
+                    <Text style={[styles.seasonStatVal, { color: colors.text }]}>
                       #{seasonEndData.seasonNumber}
                     </Text>
                   </View>
                 </View>
 
-                <View style={styles.seasonRewardCoinsCard}>
+                <View style={[styles.seasonRewardCoinsCard, { backgroundColor: isDark ? '#78350F33' : '#FEF3C7', borderColor: '#F59E0B' }]}>
                   <Text style={styles.rewardCoinsLabel}>RECOMPENSA EXTRA DE TEMPORADA</Text>
                   <View style={styles.rewardCoinsRow}>
                     <Ionicon name="sparkles" size={20} color="#F59E0B" />
-                    <Text style={styles.rewardCoinsAmount}>
+                    <Text style={[styles.rewardCoinsAmount, { color: isDark ? '#FDE047' : '#92400E' }]}>
                       +{seasonEndData.reward.coins.toLocaleString()} MONEDAS
                     </Text>
                   </View>
@@ -1284,56 +1398,56 @@ export const GamesScreen: React.FC<GamesScreenProps> = ({
       {/* CRITERIA / RULES MODAL */}
       <Modal visible={infoModalVisible} transparent animationType="fade">
         <View style={styles.infoModalOverlay}>
-          <View style={styles.infoModalCard}>
-            <View style={styles.infoModalHeader}>
+          <View style={[styles.infoModalCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
+            <View style={[styles.infoModalHeader, { borderBottomColor: colors.border }]}>
               <View style={styles.infoModalHeaderLeft}>
-                <Ionicons name="information-circle" size={20} color="#006BB6" />
-                <Text style={styles.infoModalTitle}>REGLAS Y DIFICULTAD NBA</Text>
+                <Ionicons name="information-circle" size={20} color={isDark ? '#38BDF8' : '#006BB6'} />
+                <Text style={[styles.infoModalTitle, { color: colors.text }]}>REGLAS Y DIFICULTAD NBA</Text>
               </View>
               <TouchableOpacity
                 onPress={() => setInfoModalVisible(false)}
                 style={styles.closeInfoBtn}
               >
-                <Ionicons name="close" size={20} color="#64748B" />
+                <Ionicons name="close" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.infoScroll}>
-              <Text style={styles.infoIntro}>
+              <Text style={[styles.infoIntro, { color: colors.textMuted }]}>
                 Ajusta la dificultad de la liga y pon a prueba a tu quinteto contra los mejores del mundo:
               </Text>
 
-              <View style={styles.infoCardItem}>
-                <View style={[styles.infoIconBox, { backgroundColor: '#FEE2E2' }]}>
+              <View style={[styles.infoCardItem, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
+                <View style={[styles.infoIconBox, { backgroundColor: isDark ? '#7F1D1D44' : '#FEE2E2' }]}>
                   <Ionicons name="flame" size={18} color="#DC2626" />
                 </View>
                 <View style={styles.infoItemContent}>
-                  <Text style={styles.infoItemTitle}>Titulares · Difícil</Text>
-                  <Text style={styles.infoItemText}>
+                  <Text style={[styles.infoItemTitle, { color: colors.text }]}>Titulares · Difícil</Text>
+                  <Text style={[styles.infoItemText, { color: colors.textMuted }]}>
                     Enfrentas al Quinteto Titular de cada franquicia con sus máximas estrellas (Brunson, Tatum, Jokic, Doncic, etc.). OVRs elevados.
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.infoCardItem}>
-                <View style={[styles.infoIconBox, { backgroundColor: '#EFF6FF' }]}>
+              <View style={[styles.infoCardItem, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
+                <View style={[styles.infoIconBox, { backgroundColor: isDark ? '#1E3A8A44' : '#EFF6FF' }]}>
                   <Ionicons name="flash" size={18} color="#0284C7" />
                 </View>
                 <View style={styles.infoItemContent}>
-                  <Text style={styles.infoItemTitle}>Suplentes · Medio</Text>
-                  <Text style={styles.infoItemText}>
+                  <Text style={[styles.infoItemTitle, { color: colors.text }]}>Suplentes · Medio</Text>
+                  <Text style={[styles.infoItemText, { color: colors.textMuted }]}>
                     Enfrentas a la Segunda Unidad (Quinteto Suplente) de cada franquicia. Dificultad equilibrada para plantillas en desarrollo.
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.infoCardItem}>
-                <View style={[styles.infoIconBox, { backgroundColor: '#FEF9C3' }]}>
+              <View style={[styles.infoCardItem, { backgroundColor: colors.bgCardSecondary, borderColor: colors.border }]}>
+                <View style={[styles.infoIconBox, { backgroundColor: isDark ? '#78350F44' : '#FEF9C3' }]}>
                   <Ionicons name="sparkles" size={18} color="#CA8A04" />
                 </View>
                 <View style={styles.infoItemContent}>
-                  <Text style={styles.infoItemTitle}>Quintetos Míticos & Iconos</Text>
-                  <Text style={styles.infoItemText}>
+                  <Text style={[styles.infoItemTitle, { color: colors.text }]}>Quintetos Míticos & Iconos</Text>
+                  <Text style={[styles.infoItemText, { color: colors.textMuted }]}>
                     En modo Práctica puedes desafiar a los Bulls '96 de Jordan, Lakers '01 de Shaq & Kobe, Warriors '17 de Curry y más leyendas.
                   </Text>
                 </View>
@@ -2428,5 +2542,49 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  incompleteLineupCard: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FCA5A5',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  incompleteLineupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  incompleteLineupTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  incompleteLineupSub: {
+    fontSize: 11.5,
+    color: '#7F1D1D',
+    lineHeight: 16,
+    marginBottom: 10,
+  },
+  incompleteLineupBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  incompleteLineupBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  playSeasonBtnDisabled: {
+    opacity: 0.65,
   },
 });

@@ -15,7 +15,9 @@ import { RARITY_COLORS } from '../../theme/colors';
 import { getPlayerDescription } from '../../utils/playerLore';
 import { getPlayerDossier } from '../../utils/playerDossier';
 import { getPlayerFallbackHeadshotUrl, FALLBACK_HEADSHOT_URL } from '../../utils/imageUtils';
+import { getPlayerBio } from '../../data/playerBioData';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 interface PlayerDetailModalProps {
   visible: boolean;
@@ -36,6 +38,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
   onAction,
   onDelete,
 }) => {
+  const { colors, isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<ModalTab>('BIO');
   const [imgUrl, setImgUrl] = useState<string>(player?.imageUrl || '');
 
@@ -59,6 +62,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
   const rarityConfig = RARITY_COLORS[player.rarity] || RARITY_COLORS.BRONZE;
   const isIcon = player.rarity === 'ICON' || player.isLegend;
   const dossier = getPlayerDossier(player);
+  const bio = getPlayerBio(player.name, player.position, player.height, player.country, player.countryFlag);
 
   const statsList = [
     { label: 'Triple (3PT)', value: player.stats.threePoint, color: '#38BDF8' },
@@ -77,6 +81,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
           style={[
             styles.modalCard,
             {
+              backgroundColor: colors.bgCard,
               borderColor: isIcon ? '#D4AF37' : rarityConfig.border,
               borderWidth: isIcon ? 2.5 : 2,
             },
@@ -176,6 +181,22 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                 </Text>
               ) : null}
 
+              {/* Physical & Country Badges */}
+              <View style={styles.bioBadgesRow}>
+                <View style={[styles.bioBadgeItem, isIcon && { backgroundColor: '#FEF08A' }]}>
+                  <Ionicons name="resize-outline" size={11} color={isIcon ? '#713F12' : '#0284C7'} />
+                  <Text style={[styles.bioBadgeText, isIcon && { color: '#713F12' }]}>
+                    {bio.height}
+                  </Text>
+                </View>
+                <View style={[styles.bioBadgeItem, isIcon && { backgroundColor: '#FEF08A' }]}>
+                  <Text style={{ fontSize: 11 }}>{bio.countryFlag}</Text>
+                  <Text numberOfLines={1} style={[styles.bioBadgeText, isIcon && { color: '#713F12' }]}>
+                    {bio.country}
+                  </Text>
+                </View>
+              </View>
+
               <View
                 style={[
                   styles.ovrBigBox,
@@ -191,59 +212,95 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
           </View>
 
           {/* Dossier Tabs: BIO, STATS, FICHAJES (Transfermarkt), PREMIOS */}
-          <View style={styles.tabNavRow}>
+          <View style={[styles.tabNavRow, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderBottomColor: colors.border }]}>
             <TouchableOpacity
               onPress={() => setActiveTab('BIO')}
-              style={[styles.tabNavItem, activeTab === 'BIO' && styles.tabNavItemActive]}
+              style={[
+                styles.tabNavItem,
+                activeTab === 'BIO' && [styles.tabNavItemActive, { backgroundColor: colors.bgCard, borderBottomColor: colors.primary }],
+              ]}
             >
               <Ionicons
                 name="person-outline"
                 size={13}
-                color={activeTab === 'BIO' ? '#0284C7' : '#64748B'}
+                color={activeTab === 'BIO' ? colors.primary : colors.textMuted}
               />
-              <Text style={[styles.tabNavText, activeTab === 'BIO' && styles.tabNavTextActive]}>
+              <Text
+                style={[
+                  styles.tabNavText,
+                  { color: colors.textMuted },
+                  activeTab === 'BIO' && [styles.tabNavTextActive, { color: colors.primary }],
+                ]}
+              >
                 Biografía
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setActiveTab('STATS')}
-              style={[styles.tabNavItem, activeTab === 'STATS' && styles.tabNavItemActive]}
+              style={[
+                styles.tabNavItem,
+                activeTab === 'STATS' && [styles.tabNavItemActive, { backgroundColor: colors.bgCard, borderBottomColor: colors.primary }],
+              ]}
             >
               <Ionicons
                 name="stats-chart-outline"
                 size={13}
-                color={activeTab === 'STATS' ? '#0284C7' : '#64748B'}
+                color={activeTab === 'STATS' ? colors.primary : colors.textMuted}
               />
-              <Text style={[styles.tabNavText, activeTab === 'STATS' && styles.tabNavTextActive]}>
+              <Text
+                style={[
+                  styles.tabNavText,
+                  { color: colors.textMuted },
+                  activeTab === 'STATS' && [styles.tabNavTextActive, { color: colors.primary }],
+                ]}
+              >
                 Estadísticas
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setActiveTab('TRANSFERS')}
-              style={[styles.tabNavItem, activeTab === 'TRANSFERS' && styles.tabNavItemActive]}
+              style={[
+                styles.tabNavItem,
+                activeTab === 'TRANSFERS' && [styles.tabNavItemActive, { backgroundColor: colors.bgCard, borderBottomColor: colors.primary }],
+              ]}
             >
               <Ionicons
                 name="swap-horizontal-outline"
                 size={13}
-                color={activeTab === 'TRANSFERS' ? '#0284C7' : '#64748B'}
+                color={activeTab === 'TRANSFERS' ? colors.primary : colors.textMuted}
               />
-              <Text style={[styles.tabNavText, activeTab === 'TRANSFERS' && styles.tabNavTextActive]}>
+              <Text
+                style={[
+                  styles.tabNavText,
+                  { color: colors.textMuted },
+                  activeTab === 'TRANSFERS' && [styles.tabNavTextActive, { color: colors.primary }],
+                ]}
+              >
                 Fichajes
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setActiveTab('AWARDS')}
-              style={[styles.tabNavItem, activeTab === 'AWARDS' && styles.tabNavItemActive]}
+              style={[
+                styles.tabNavItem,
+                activeTab === 'AWARDS' && [styles.tabNavItemActive, { backgroundColor: colors.bgCard, borderBottomColor: '#CA8A04' }],
+              ]}
             >
               <Ionicons
                 name="trophy-outline"
                 size={13}
-                color={activeTab === 'AWARDS' ? '#CA8A04' : '#64748B'}
+                color={activeTab === 'AWARDS' ? '#CA8A04' : colors.textMuted}
               />
-              <Text style={[styles.tabNavText, activeTab === 'AWARDS' && styles.tabNavTextActiveAwards]}>
+              <Text
+                style={[
+                  styles.tabNavText,
+                  { color: colors.textMuted },
+                  activeTab === 'AWARDS' && [styles.tabNavTextActiveAwards, { color: '#CA8A04' }],
+                ]}
+              >
                 Palmarés
               </Text>
             </TouchableOpacity>
@@ -252,49 +309,83 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
           {/* Tab Content Body */}
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.bgCard }]}
           >
             {/* 1. BIOGRAFIA & PERFIL TACTICO */}
             {activeTab === 'BIO' && (
               <View style={styles.tabPane}>
-                {/* Moment and Story */}
-                <View style={styles.loreBox}>
-                  <View style={styles.loreHeader}>
-                    <Ionicons name="document-text-outline" size={14} color="#0284C7" />
-                    <Text style={styles.loreTitle}>MOMENTO & DESEMPEÑO DESTACADO</Text>
+                {/* Key Bio / Physical Profile Card */}
+                <View style={[styles.identityCard, { backgroundColor: isDark ? colors.bgCardSecondary : '#FFFFFF', borderColor: colors.border }]}>
+                  <View style={styles.identityHeader}>
+                    <Ionicons name="id-card-outline" size={14} color={colors.primary} />
+                    <Text style={[styles.identityTitle, { color: colors.text }]}>FICHA TÉCNICA & PERFIL FÍSICO</Text>
                   </View>
-                  <Text style={styles.loreText}>{getPlayerDescription(player)}</Text>
+                  <View style={styles.identityGrid}>
+                    <View style={[styles.identityCell, { backgroundColor: isDark ? '#151D2E' : '#F8FAFC' }]}>
+                      <Text style={[styles.identityCellLabel, { color: colors.textMuted }]}>ESTATURA</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="resize-outline" size={13} color={colors.primary} />
+                        <Text style={[styles.identityCellVal, { color: colors.text }]}>{bio.height}</Text>
+                      </View>
+                    </View>
+                    <View style={[styles.identityCell, { backgroundColor: isDark ? '#151D2E' : '#F8FAFC' }]}>
+                      <Text style={[styles.identityCellLabel, { color: colors.textMuted }]}>NACIONALIDAD</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={{ fontSize: 13 }}>{bio.countryFlag}</Text>
+                        <Text numberOfLines={1} style={[styles.identityCellVal, { color: colors.text }]}>{bio.country}</Text>
+                      </View>
+                    </View>
+                    <View style={[styles.identityCell, { backgroundColor: isDark ? '#151D2E' : '#F8FAFC' }]}>
+                      <Text style={[styles.identityCellLabel, { color: colors.textMuted }]}>DORSAL & POS</Text>
+                      <Text style={[styles.identityCellVal, { color: colors.text }]}>#{player.number} · {player.position}</Text>
+                    </View>
+                    <View style={[styles.identityCell, { backgroundColor: isDark ? '#151D2E' : '#F8FAFC' }]}>
+                      <Text style={[styles.identityCellLabel, { color: colors.textMuted }]}>CONFERENCIA / ERA</Text>
+                      <Text style={[styles.identityCellVal, { color: colors.text }]}>
+                        {player.classicTeamYear ? `Era ${player.classicTeamYear}` : `${player.conference}`}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Moment and Story */}
+                <View style={[styles.loreBox, { backgroundColor: isDark ? '#172554' : '#F0F9FF', borderLeftColor: colors.primary }]}>
+                  <View style={styles.loreHeader}>
+                    <Ionicons name="document-text-outline" size={14} color={colors.primary} />
+                    <Text style={[styles.loreTitle, { color: isDark ? '#93C5FD' : '#0369A1' }]}>MOMENTO & DESEMPEÑO DESTACADO</Text>
+                  </View>
+                  <Text style={[styles.loreText, { color: isDark ? '#E2E8F0' : '#334155' }]}>{getPlayerDescription(player)}</Text>
                 </View>
 
                 {/* Tactical Profile Cards */}
-                <View style={styles.infoCard}>
+                <View style={[styles.infoCard, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
                   <View style={styles.infoRow}>
-                    <View style={styles.infoIconBox}>
-                      <Ionicons name="basketball-outline" size={15} color="#0284C7" />
+                    <View style={[styles.infoIconBox, { backgroundColor: isDark ? '#151D2E' : '#FFFFFF', borderColor: colors.border }]}>
+                      <Ionicons name="basketball-outline" size={15} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.infoLabel}>ROL TÁCTICO</Text>
-                      <Text style={styles.infoVal}>{dossier.tacticalRole}</Text>
+                      <Text style={[styles.infoLabel, { color: colors.textMuted }]}>ROL TÁCTICO</Text>
+                      <Text style={[styles.infoVal, { color: colors.text }]}>{dossier.tacticalRole}</Text>
                     </View>
                   </View>
 
                   <View style={styles.infoRow}>
-                    <View style={styles.infoIconBox}>
+                    <View style={[styles.infoIconBox, { backgroundColor: isDark ? '#151D2E' : '#FFFFFF', borderColor: colors.border }]}>
                       <Ionicons name="flash-outline" size={15} color="#EAB308" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.infoLabel}>ESPECIALIDAD TÉCNICA</Text>
-                      <Text style={styles.infoVal}>{dossier.specialty}</Text>
+                      <Text style={[styles.infoLabel, { color: colors.textMuted }]}>ESPECIALIDAD TÉCNICA</Text>
+                      <Text style={[styles.infoVal, { color: colors.text }]}>{dossier.specialty}</Text>
                     </View>
                   </View>
 
                   <View style={styles.infoRow}>
-                    <View style={styles.infoIconBox}>
+                    <View style={[styles.infoIconBox, { backgroundColor: isDark ? '#151D2E' : '#FFFFFF', borderColor: colors.border }]}>
                       <Ionicons name="shield-outline" size={15} color="#10B981" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.infoLabel}>ESTILO DE JUEGO</Text>
-                      <Text style={styles.infoVal}>{dossier.playStyle}</Text>
+                      <Text style={[styles.infoLabel, { color: colors.textMuted }]}>ESTILO DE JUEGO</Text>
+                      <Text style={[styles.infoVal, { color: colors.text }]}>{dossier.playStyle}</Text>
                     </View>
                   </View>
                 </View>
@@ -305,54 +396,54 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
             {activeTab === 'STATS' && (
               <View style={styles.tabPane}>
                 {/* Season / Peak Averages Grid */}
-                <Text style={styles.sectionSubtitle}>PROMEDIOS POR PARTIDO (TEMPORADA DESTACADA)</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>PROMEDIOS POR PARTIDO (TEMPORADA DESTACADA)</Text>
                 <View style={styles.averagesGrid}>
-                  <View style={styles.avgBox}>
-                    <Text style={styles.avgVal}>{dossier.seasonAverages.pts}</Text>
-                    <Text style={styles.avgLabel}>PTS</Text>
+                  <View style={[styles.avgBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
+                    <Text style={[styles.avgVal, { color: colors.text }]}>{dossier.seasonAverages.pts}</Text>
+                    <Text style={[styles.avgLabel, { color: colors.textMuted }]}>PTS</Text>
                   </View>
-                  <View style={styles.avgBox}>
-                    <Text style={styles.avgVal}>{dossier.seasonAverages.reb}</Text>
-                    <Text style={styles.avgLabel}>REB</Text>
+                  <View style={[styles.avgBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
+                    <Text style={[styles.avgVal, { color: colors.text }]}>{dossier.seasonAverages.reb}</Text>
+                    <Text style={[styles.avgLabel, { color: colors.textMuted }]}>REB</Text>
                   </View>
-                  <View style={styles.avgBox}>
-                    <Text style={styles.avgVal}>{dossier.seasonAverages.ast}</Text>
-                    <Text style={styles.avgLabel}>AST</Text>
+                  <View style={[styles.avgBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
+                    <Text style={[styles.avgVal, { color: colors.text }]}>{dossier.seasonAverages.ast}</Text>
+                    <Text style={[styles.avgLabel, { color: colors.textMuted }]}>AST</Text>
                   </View>
-                  <View style={styles.avgBox}>
-                    <Text style={styles.avgVal}>{dossier.seasonAverages.stl}</Text>
-                    <Text style={styles.avgLabel}>ROB</Text>
+                  <View style={[styles.avgBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
+                    <Text style={[styles.avgVal, { color: colors.text }]}>{dossier.seasonAverages.stl}</Text>
+                    <Text style={[styles.avgLabel, { color: colors.textMuted }]}>ROB</Text>
                   </View>
-                  <View style={styles.avgBox}>
-                    <Text style={styles.avgVal}>{dossier.seasonAverages.blk}</Text>
-                    <Text style={styles.avgLabel}>BLQ</Text>
+                  <View style={[styles.avgBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
+                    <Text style={[styles.avgVal, { color: colors.text }]}>{dossier.seasonAverages.blk}</Text>
+                    <Text style={[styles.avgLabel, { color: colors.textMuted }]}>BLQ</Text>
                   </View>
-                  <View style={styles.avgBox}>
-                    <Text style={styles.avgVal}>{dossier.seasonAverages.fgPct}</Text>
-                    <Text style={styles.avgLabel}>%TC</Text>
+                  <View style={[styles.avgBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
+                    <Text style={[styles.avgVal, { color: colors.text }]}>{dossier.seasonAverages.fgPct}</Text>
+                    <Text style={[styles.avgLabel, { color: colors.textMuted }]}>%TC</Text>
                   </View>
-                  <View style={styles.avgBox}>
-                    <Text style={styles.avgVal}>{dossier.seasonAverages.threePct}</Text>
-                    <Text style={styles.avgLabel}>%3P</Text>
+                  <View style={[styles.avgBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
+                    <Text style={[styles.avgVal, { color: colors.text }]}>{dossier.seasonAverages.threePct}</Text>
+                    <Text style={[styles.avgLabel, { color: colors.textMuted }]}>%3P</Text>
                   </View>
-                  <View style={styles.avgBox}>
-                    <Text style={styles.avgVal}>{dossier.seasonAverages.ftPct}</Text>
-                    <Text style={styles.avgLabel}>%TL</Text>
+                  <View style={[styles.avgBox, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
+                    <Text style={[styles.avgVal, { color: colors.text }]}>{dossier.seasonAverages.ftPct}</Text>
+                    <Text style={[styles.avgLabel, { color: colors.textMuted }]}>%TL</Text>
                   </View>
                 </View>
 
                 {/* 2K Full Attribute Bars */}
-                <Text style={[styles.sectionSubtitle, { marginTop: 12 }]}>ATRIBUTOS COMPLETOS NBA 2K</Text>
+                <Text style={[styles.sectionSubtitle, { marginTop: 12, color: colors.textMuted }]}>ATRIBUTOS COMPLETOS NBA 2K</Text>
                 <View style={styles.statsGrid}>
                   {statsList.map((stat, idx) => {
                     const percent = Math.min(100, Math.max(10, stat.value));
                     return (
                       <View key={idx} style={styles.statRow}>
                         <View style={styles.statLabelRow}>
-                          <Text style={styles.statLabel}>{stat.label}</Text>
-                          <Text style={styles.statValue}>{stat.value}</Text>
+                          <Text style={[styles.statLabel, { color: colors.text }]}>{stat.label}</Text>
+                          <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
                         </View>
-                        <View style={styles.barTrack}>
+                        <View style={[styles.barTrack, { backgroundColor: isDark ? '#334155' : '#E2E8F0' }]}>
                           <View
                             style={[
                               styles.barFill,
@@ -374,10 +465,10 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
             {activeTab === 'TRANSFERS' && (
               <View style={styles.tabPane}>
                 {/* Draft Badge Card */}
-                <View style={styles.draftCard}>
+                <View style={[styles.draftCard, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
                   <View style={styles.draftHeader}>
-                    <Ionicons name="school" size={16} color="#006BB6" />
-                    <Text style={styles.draftTitle}>SELECCIÓN DEL DRAFT NBA</Text>
+                    <Ionicons name="school" size={16} color={colors.primary} />
+                    <Text style={[styles.draftTitle, { color: colors.primary }]}>SELECCIÓN DEL DRAFT NBA</Text>
                   </View>
                   <View style={styles.draftBody}>
                     {dossier.draftInfo.teamLogo ? (
@@ -388,13 +479,13 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                       />
                     ) : null}
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.draftMainText}>
+                      <Text style={[styles.draftMainText, { color: colors.text }]}>
                         Año {dossier.draftInfo.year} · Pick #{dossier.draftInfo.pick} (Ronda {dossier.draftInfo.round})
                       </Text>
-                      <Text style={styles.draftSubText}>
-                        Seleccionado por: <Text style={{ fontWeight: '700', color: '#0F172A' }}>{dossier.draftInfo.teamName}</Text>
+                      <Text style={[styles.draftSubText, { color: colors.textMuted }]}>
+                        Seleccionado por: <Text style={{ fontWeight: '700', color: colors.text }}>{dossier.draftInfo.teamName}</Text>
                       </Text>
-                      <Text style={styles.draftOriginText}>
+                      <Text style={[styles.draftOriginText, { color: colors.textMuted }]}>
                         Procedencia: {dossier.draftInfo.origin}
                       </Text>
                     </View>
@@ -402,24 +493,24 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                 </View>
 
                 {/* Transfermarkt Movements Banner */}
-                <View style={styles.tmBanner}>
+                <View style={[styles.tmBanner, { backgroundColor: isDark ? colors.bgCardSecondary : '#FFFFFF', borderColor: colors.border }]}>
                   <View style={styles.tmBannerHeader}>
                     <Text style={styles.tmBannerTitle}>HISTORIAL DE FICHAJES</Text>
                   </View>
-                  <View style={styles.tmInfoBox}>
-                    <Ionicons name="information-circle" size={16} color="#006BB6" style={{ marginTop: 1 }} />
-                    <Text style={styles.tmInfoText}>
+                  <View style={[styles.tmInfoBox, { backgroundColor: isDark ? '#172554' : '#F0F9FF', borderBottomColor: colors.border }]}>
+                    <Ionicons name="information-circle" size={16} color={colors.primary} style={{ marginTop: 1 }} />
+                    <Text style={[styles.tmInfoText, { color: isDark ? '#93C5FD' : '#0369A1' }]}>
                       Aquí se muestra el historial completo de traspasos, contratos y draft de {player.name} con escudos oficiales.
                     </Text>
                   </View>
 
                   {/* Transfer Table Header */}
-                  <View style={styles.tmTableHeader}>
-                    <Text style={[styles.tmTh, { width: 44 }]}>Temp.</Text>
-                    <Text style={[styles.tmTh, { width: 68 }]}>Fecha</Text>
-                    <Text style={[styles.tmTh, { flex: 1 }]}>Último club</Text>
-                    <Text style={[styles.tmTh, { flex: 1 }]}>Nuevo club</Text>
-                    <Text style={[styles.tmTh, { width: 72, textAlign: 'right' }]}>Valor / Coste</Text>
+                  <View style={[styles.tmTableHeader, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9', borderBottomColor: colors.border }]}>
+                    <Text style={[styles.tmTh, { width: 44, color: isDark ? '#94A3B8' : '#475569' }]}>Temp.</Text>
+                    <Text style={[styles.tmTh, { width: 68, color: isDark ? '#94A3B8' : '#475569' }]}>Fecha</Text>
+                    <Text style={[styles.tmTh, { flex: 1, color: isDark ? '#94A3B8' : '#475569' }]}>Último club</Text>
+                    <Text style={[styles.tmTh, { flex: 1, color: isDark ? '#94A3B8' : '#475569' }]}>Nuevo club</Text>
+                    <Text style={[styles.tmTh, { width: 72, textAlign: 'right', color: isDark ? '#94A3B8' : '#475569' }]}>Valor / Coste</Text>
                   </View>
 
                   {/* Transfer Rows */}
@@ -432,11 +523,12 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                         key={idx}
                         style={[
                           styles.tmTableRow,
-                          idx % 2 === 1 && { backgroundColor: '#F8FAFC' },
+                          { borderBottomColor: colors.border },
+                          idx % 2 === 1 && { backgroundColor: isDark ? '#151D2E' : '#F8FAFC' },
                         ]}
                       >
-                        <Text style={[styles.tmTdTemp, { width: 44 }]}>{mov.season}</Text>
-                        <Text style={[styles.tmTdDate, { width: 68 }]}>{mov.date}</Text>
+                        <Text style={[styles.tmTdTemp, { width: 44, color: colors.text }]}>{mov.season}</Text>
+                        <Text style={[styles.tmTdDate, { width: 68, color: colors.textMuted }]}>{mov.date}</Text>
 
                         {/* From Club */}
                         <View style={[styles.tmClubCell, { flex: 1 }]}>
@@ -447,9 +539,9 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                               resizeMode="contain"
                             />
                           ) : (
-                            <Ionicons name="shield-outline" size={14} color="#94A3B8" style={{ marginRight: 3 }} />
+                            <Ionicons name="shield-outline" size={14} color={colors.textMuted} style={{ marginRight: 3 }} />
                           )}
-                          <Text numberOfLines={1} style={styles.tmClubName}>
+                          <Text numberOfLines={1} style={[styles.tmClubName, { color: colors.text }]}>
                             {fromTeamInfo ? fromTeamInfo.abbreviation : mov.fromTeam}
                           </Text>
                         </View>
@@ -463,9 +555,9 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                               resizeMode="contain"
                             />
                           ) : (
-                            <Ionicons name="shield-outline" size={14} color="#006BB6" style={{ marginRight: 3 }} />
+                            <Ionicons name="shield-outline" size={14} color={colors.primary} style={{ marginRight: 3 }} />
                           )}
-                          <Text numberOfLines={1} style={[styles.tmClubName, { fontWeight: '700', color: '#0F172A' }]}>
+                          <Text numberOfLines={1} style={[styles.tmClubName, { fontWeight: '700', color: colors.text }]}>
                             {toTeamInfo ? toTeamInfo.abbreviation : mov.toTeam}
                           </Text>
                         </View>
@@ -473,7 +565,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                         {/* Value / Fee Type */}
                         <View style={{ width: 72, alignItems: 'flex-end' }}>
                           {mov.marketValue ? (
-                            <Text numberOfLines={1} style={styles.tmValueText}>{mov.marketValue}</Text>
+                            <Text numberOfLines={1} style={[styles.tmValueText, { color: colors.text }]}>{mov.marketValue}</Text>
                           ) : null}
                           <Text numberOfLines={1} style={styles.tmFeeText}>{mov.feeOrType}</Text>
                         </View>
@@ -487,16 +579,25 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
             {/* 4. PALMARES, PREMIOS & DISTINCIONES */}
             {activeTab === 'AWARDS' && (
               <View style={styles.tabPane}>
-                <Text style={styles.sectionSubtitle}>PALMARÉS & RECONOCIMIENTOS OFICIALES</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>PALMARÉS & RECONOCIMIENTOS OFICIALES</Text>
                 <View style={styles.awardsList}>
                   {dossier.awards.map((award, idx) => (
-                    <View key={idx} style={styles.awardCard}>
-                      <View style={styles.awardIconBox}>
-                        <Ionicons name={award.icon as any || 'trophy'} size={18} color="#B45309" />
+                    <View
+                      key={idx}
+                      style={[
+                        styles.awardCard,
+                        {
+                          backgroundColor: isDark ? colors.bgCardSecondary : '#FEFCE8',
+                          borderColor: isDark ? '#854D0E' : '#FEF08A',
+                        },
+                      ]}
+                    >
+                      <View style={[styles.awardIconBox, isDark && { backgroundColor: '#854D0E' }]}>
+                        <Ionicons name={award.icon as any || 'trophy'} size={18} color={isDark ? '#FEF08A' : '#B45309'} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={styles.awardTitleRow}>
-                          <Text style={styles.awardName}>{award.name}</Text>
+                          <Text style={[styles.awardName, { color: isDark ? '#FDE047' : '#854D0E' }]}>{award.name}</Text>
                           {award.count ? (
                             <View style={styles.awardCountBadge}>
                               <Text style={styles.awardCountText}>x{award.count}</Text>
@@ -504,7 +605,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                           ) : null}
                         </View>
                         {award.details ? (
-                          <Text style={styles.awardDetails}>{award.details}</Text>
+                          <Text style={[styles.awardDetails, { color: isDark ? '#FEF08A' : '#A16207' }]}>{award.details}</Text>
                         ) : null}
                       </View>
                     </View>
@@ -552,12 +653,16 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({
                   style={styles.deleteCardBtn}
                 >
                   <Ionicons name="trash-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
-                  <Text style={styles.deleteCardBtnText}>Eliminar de mi Colección</Text>
+                  <Text style={styles.deleteCardBtnText}>Eliminar Carta</Text>
                 </TouchableOpacity>
               ) : null}
 
-              <TouchableOpacity activeOpacity={0.85} onPress={onClose} style={styles.dismissBtn}>
-                <Text style={styles.dismissBtnText}>CERRAR</Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={onClose}
+                style={[styles.dismissBtn, { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' }]}
+              >
+                <Text style={[styles.dismissBtnText, { color: colors.text }]}>CERRAR</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -680,6 +785,29 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: 2,
   },
+  bioBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginVertical: 3,
+  },
+  bioBadgeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  bioBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#334155',
+  },
   ovrBigBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -700,6 +828,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
     color: '#1D4ED8',
+  },
+
+  // Identity Card (Bio Tab)
+  identityCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 10,
+    gap: 8,
+  },
+  identityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 6,
+  },
+  identityTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: 0.5,
+  },
+  identityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  identityCell: {
+    width: '48%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 7,
+    gap: 2,
+  },
+  identityCellLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  identityCellVal: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#0F172A',
   },
 
   // Tab Navigation

@@ -10,24 +10,27 @@ import { GamesScreen } from '../screens/GamesScreen';
 import { CollectionScreen } from '../screens/CollectionScreen';
 import { CoachCreatorScreen } from '../screens/CoachCreatorScreen';
 import { useTranslation } from '../i18n/useTranslation';
-import { NBA_THEME } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const TabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
 
   return (
     <Tab.Navigator
       initialRouteName="Squad"
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: NBA_THEME.nbaNavy,
-        tabBarInactiveTintColor: '#94A3B8',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: [
           styles.tabBar,
           {
+            backgroundColor: colors.tabBarBg,
+            borderTopColor: colors.tabBarBorder,
             height: 52 + Math.max(insets.bottom, 12),
             paddingBottom: Math.max(insets.bottom, 6),
           },

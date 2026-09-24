@@ -18,6 +18,7 @@ import { CustomBadge } from './CustomBadge';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setAppLanguage, setAchievementsModalVisible } from '../../store/slices/squadSlice';
 import { useTranslation } from '../../i18n/useTranslation';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ManagerProfileModalProps {
   visible: boolean;
@@ -37,6 +38,14 @@ export const ManagerProfileModal: React.FC<ManagerProfileModalProps> = ({
   const coins = useAppSelector((state) => state.squad.coins);
   const cards = useAppSelector((state) => state.squad.cards);
   const claimedAchievements = useAppSelector((state) => state.squad.claimedAchievements);
+
+  const { themeMode, setThemeMode, isDark, colors: themeColors } = useTheme();
+
+  const handleThemeModeChange = async (mode: 'light' | 'dark' | 'system') => {
+    if (mode === themeMode) return;
+    await HapticsService.selectionTick();
+    await setThemeMode(mode);
+  };
 
   const [profile, setProfile] = useState<ManagerProfile | null>(null);
   const [isGuest, setIsGuest] = useState(true);
@@ -226,6 +235,86 @@ export const ManagerProfileModal: React.FC<ManagerProfileModalProps> = ({
                     ]}
                   >
                     English (EN)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Theme Selector */}
+            <View style={styles.languageSection}>
+              <Text style={styles.sectionTitle}>
+                {language === 'es' ? 'Tema de la Aplicación' : 'App Theme'}
+              </Text>
+              <View style={styles.languageButtonsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.langButton,
+                    themeMode === 'light' && styles.langButtonActive,
+                  ]}
+                  onPress={() => handleThemeModeChange('light')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="sunny-outline"
+                    size={14}
+                    color={themeMode === 'light' ? '#FFFFFF' : '#475569'}
+                    style={{ marginBottom: 2 }}
+                  />
+                  <Text
+                    style={[
+                      styles.langButtonText,
+                      themeMode === 'light' && styles.langButtonTextActive,
+                    ]}
+                  >
+                    {language === 'es' ? 'Claro' : 'Light'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.langButton,
+                    themeMode === 'dark' && styles.langButtonActive,
+                  ]}
+                  onPress={() => handleThemeModeChange('dark')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="moon-outline"
+                    size={14}
+                    color={themeMode === 'dark' ? '#FFFFFF' : '#475569'}
+                    style={{ marginBottom: 2 }}
+                  />
+                  <Text
+                    style={[
+                      styles.langButtonText,
+                      themeMode === 'dark' && styles.langButtonTextActive,
+                    ]}
+                  >
+                    {language === 'es' ? 'Oscuro' : 'Dark'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.langButton,
+                    themeMode === 'system' && styles.langButtonActive,
+                  ]}
+                  onPress={() => handleThemeModeChange('system')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="phone-portrait-outline"
+                    size={14}
+                    color={themeMode === 'system' ? '#FFFFFF' : '#475569'}
+                    style={{ marginBottom: 2 }}
+                  />
+                  <Text
+                    style={[
+                      styles.langButtonText,
+                      themeMode === 'system' && styles.langButtonTextActive,
+                    ]}
+                  >
+                    {language === 'es' ? 'Auto' : 'Auto'}
                   </Text>
                 </TouchableOpacity>
               </View>

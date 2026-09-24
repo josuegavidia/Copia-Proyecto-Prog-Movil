@@ -18,6 +18,7 @@ import { HapticsService } from '../../services/haptics';
 import { getPlayerDescription } from '../../utils/playerLore';
 import { getPlayerFallbackHeadshotUrl, FALLBACK_HEADSHOT_URL } from '../../utils/imageUtils';
 import { RARITY_COLORS } from '../../theme/colors';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -59,6 +60,7 @@ export const DailyMarketView: React.FC<DailyMarketViewProps> = ({
   coins,
   onBuyPlayer,
 }) => {
+  const { colors, isDark } = useTheme();
   const [marketState, setMarketState] = useState<DailyMarketState | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<MarketFilter>('ALL');
@@ -171,9 +173,9 @@ export const DailyMarketView: React.FC<DailyMarketViewProps> = ({
 
   if (loading || !marketState) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
         <Ionicons name="basket" size={36} color="#1D428A" />
-        <Text style={styles.loadingText}>Cargando Mercado Rotativo 24h...</Text>
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Cargando Mercado Rotativo 24h...</Text>
       </View>
     );
   }
@@ -187,7 +189,7 @@ export const DailyMarketView: React.FC<DailyMarketViewProps> = ({
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* 24-HOUR ROTATION BANNER */}
       <View style={styles.rotationBanner}>
         <View style={styles.bannerLeft}>
@@ -215,9 +217,19 @@ export const DailyMarketView: React.FC<DailyMarketViewProps> = ({
             HapticsService.selectionTick();
             setFilter('ALL');
           }}
-          style={[styles.filterChip, filter === 'ALL' && styles.filterChipActive]}
+          style={[
+            styles.filterChip,
+            { backgroundColor: colors.bgCard, borderColor: colors.border },
+            filter === 'ALL' && styles.filterChipActive,
+          ]}
         >
-          <Text style={[styles.filterText, filter === 'ALL' && styles.filterTextActive]}>
+          <Text
+            style={[
+              styles.filterText,
+              { color: colors.textMuted },
+              filter === 'ALL' && styles.filterTextActive,
+            ]}
+          >
             Todos ({marketState.items.length})
           </Text>
         </TouchableOpacity>
@@ -278,7 +290,11 @@ export const DailyMarketView: React.FC<DailyMarketViewProps> = ({
                 key={item.id}
                 style={[
                   styles.marketCard,
-                  isIcon && styles.marketCardIcon,
+                  {
+                    backgroundColor: isIcon ? (isDark ? '#141B29' : '#FFFDF5') : rarityStyle.cardBg,
+                    borderColor: isIcon ? (isDark ? '#EAB308' : '#D4AF37') : rarityStyle.border,
+                    borderWidth: 2,
+                  },
                   item.isSold && styles.marketCardSold,
                 ]}
               >
@@ -292,9 +308,9 @@ export const DailyMarketView: React.FC<DailyMarketViewProps> = ({
 
                 {/* Icon Legend Badge */}
                 {isIcon && !item.isDailyDeal && (
-                  <View style={styles.iconBadgeTag}>
-                    <Ionicons name="trophy" size={10} color="#92400E" style={{ marginRight: 3 }} />
-                    <Text style={styles.iconBadgeText}>LEYENDA ICONO</Text>
+                  <View style={[styles.iconBadgeTag, isDark && { backgroundColor: '#1E2738', borderColor: '#CA8A04' }]}>
+                    <Ionicons name="trophy" size={10} color={isDark ? '#FDE047' : '#92400E'} style={{ marginRight: 3 }} />
+                    <Text style={[styles.iconBadgeText, isDark && { color: '#FEF08A' }]}>LEYENDA ICONO</Text>
                   </View>
                 )}
 
@@ -304,63 +320,66 @@ export const DailyMarketView: React.FC<DailyMarketViewProps> = ({
                   onPress={() => setSelectedPlayerForDetail(item.player)}
                   style={styles.cardHeaderArea}
                 >
-                  <View style={styles.ovrBadge}>
-                    <Text style={[styles.ovrText, { color: rarityStyle.border }]}>
+                  <View style={[styles.ovrBadge, { backgroundColor: isIcon ? (isDark ? '#1E2738' : '#FEF9C3') : (isDark ? '#1E293B' : 'rgba(0,0,0,0.25)'), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }]}>
+                    <Text style={[styles.ovrText, { color: isIcon ? (isDark ? '#FDE047' : '#B45309') : '#FFFFFF' }]}>
                       {item.player.stats.ovr}
                     </Text>
-                    <Text style={styles.ovrSub}>OVR</Text>
+                    <Text style={[styles.ovrSub, { color: isIcon ? (isDark ? '#FCD34D' : '#A16207') : '#E2E8F0' }]}>OVR</Text>
                   </View>
 
                   <MarketPlayerImage player={item.player} />
 
-                  <View style={styles.posBadge}>
-                    <Text style={styles.posText}>{item.player.position}</Text>
-                    <Text style={styles.teamText}>{item.player.teamAbbr}</Text>
+                  <View style={[styles.posBadge, { backgroundColor: isIcon ? (isDark ? '#1E2738' : '#FEF9C3') : (isDark ? '#1E293B' : 'rgba(0,0,0,0.25)') }]}>
+                    <Text style={[styles.posText, { color: isIcon ? (isDark ? '#F8FAFC' : '#78350F') : '#FFFFFF' }]}>{item.player.position}</Text>
+                    <Text style={[styles.teamText, { color: isIcon ? (isDark ? '#94A3B8' : '#92400E') : '#E2E8F0' }]}>{item.player.teamAbbr}</Text>
                   </View>
                 </TouchableOpacity>
 
                 {/* Player Name */}
-                <Text numberOfLines={1} style={styles.playerName}>
-                  {item.player.name}
-                </Text>
-                <Text style={styles.playerDetailsSub}>
-                  {item.player.team} · {item.player.rarity}
-                </Text>
+                <View style={[styles.playerNameBox, { backgroundColor: isIcon ? (isDark ? '#0B0F19' : '#0F172A') : (rarityStyle.nameBoxBg || 'rgba(0,0,0,0.2)') }]}>
+                  <Text numberOfLines={1} style={[styles.playerName, { color: isIcon ? (isDark ? '#FFFFFF' : '#FEF08A') : rarityStyle.text }]}>
+                    {item.player.name}
+                  </Text>
+                  <Text style={[styles.playerDetailsSub, { color: isIcon ? (isDark ? '#FDE047' : '#D4AF37') : rarityStyle.subText }]}>
+                    {item.player.team} · {rarityStyle.label}
+                  </Text>
+                </View>
 
                 {/* Quick Attributes Row */}
-                <View style={styles.miniStatsRow}>
+                <View style={[styles.miniStatsRow, { backgroundColor: isIcon ? (isDark ? '#161F30' : '#FEFCE8') : (isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.18)') }]}>
                   <View style={styles.miniStat}>
-                    <Text style={styles.miniStatLabel}>3PT</Text>
+                    <Text style={[styles.miniStatLabel, { color: isIcon ? (isDark ? '#94A3B8' : '#854D0E') : (isDark ? '#94A3B8' : '#E2E8F0') }]}>3PT</Text>
                     <Text
                       style={[
                         styles.miniStatVal,
-                        (item.player.stats.threePoint || 0) >= 90 && { color: '#DC2626', fontWeight: '900' },
+                        { color: isIcon ? (isDark ? '#F8FAFC' : '#0F172A') : (isDark ? '#F8FAFC' : '#FFFFFF') },
+                        (item.player.stats.threePoint || 0) >= 90 && { color: isDark ? '#F87171' : (isIcon ? '#DC2626' : '#FEF08A'), fontWeight: '900' },
                       ]}
                     >
                       {item.player.stats.threePoint || '-'}
                     </Text>
                   </View>
                   <View style={styles.miniStat}>
-                    <Text style={styles.miniStatLabel}>DNK</Text>
-                    <Text style={styles.miniStatVal}>{item.player.stats.dunk || '-'}</Text>
+                    <Text style={[styles.miniStatLabel, { color: isIcon ? (isDark ? '#94A3B8' : '#854D0E') : (isDark ? '#94A3B8' : '#E2E8F0') }]}>DNK</Text>
+                    <Text style={[styles.miniStatVal, { color: isIcon ? (isDark ? '#F8FAFC' : '#0F172A') : (isDark ? '#F8FAFC' : '#FFFFFF') }]}>{item.player.stats.dunk || '-'}</Text>
                   </View>
                   <View style={styles.miniStat}>
-                    <Text style={styles.miniStatLabel}>DEF</Text>
-                    <Text style={styles.miniStatVal}>{item.player.stats.defense || '-'}</Text>
+                    <Text style={[styles.miniStatLabel, { color: isIcon ? (isDark ? '#94A3B8' : '#854D0E') : (isDark ? '#94A3B8' : '#E2E8F0') }]}>DEF</Text>
+                    <Text style={[styles.miniStatVal, { color: isIcon ? (isDark ? '#F8FAFC' : '#0F172A') : (isDark ? '#F8FAFC' : '#FFFFFF') }]}>{item.player.stats.defense || '-'}</Text>
                   </View>
                 </View>
 
                 {/* Price & Buy Button */}
                 <View style={styles.priceContainer}>
                   {item.originalPrice && (
-                    <Text style={styles.originalPriceText}>
+                    <Text style={[styles.originalPriceText, { color: isIcon ? '#94A3B8' : '#CBD5E1' }]}>
                       {item.originalPrice.toLocaleString()} mon
                     </Text>
                   )}
                   <View style={styles.priceRow}>
-                    <Ionicons name="cash" size={16} color="#F59E0B" style={{ marginRight: 4 }} />
-                    <Text style={styles.priceVal}>{item.price.toLocaleString()}</Text>
-                    <Text style={styles.priceSub}>monedas</Text>
+                    <Ionicons name="cash" size={16} color={isIcon ? (isDark ? '#F59E0B' : '#D97706') : '#FEF08A'} style={{ marginRight: 4 }} />
+                    <Text style={[styles.priceVal, { color: isDark ? '#F8FAFC' : (isIcon ? '#78350F' : '#FFFFFF') }]}>{item.price.toLocaleString()}</Text>
+                    <Text style={[styles.priceSub, { color: isDark ? '#94A3B8' : (isIcon ? '#854D0E' : '#E2E8F0') }]}>monedas</Text>
                   </View>
                 </View>
 
@@ -377,7 +396,7 @@ export const DailyMarketView: React.FC<DailyMarketViewProps> = ({
                     style={[
                       styles.buyBtn,
                       isIcon && styles.buyBtnIcon,
-                      !canAfford && styles.buyBtnDisabled,
+                      !canAfford && { backgroundColor: isDark ? '#1E293B' : '#E2E8F0', borderColor: colors.border },
                     ]}
                   >
                     <Ionicons
@@ -758,17 +777,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#64748B',
   },
+  playerNameBox: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 6,
+    alignItems: 'center',
+  },
   playerName: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 2,
+    fontSize: 12.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   playerDetailsSub: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '500',
-    marginBottom: 6,
+    fontSize: 9.5,
+    color: '#CBD5E1',
+    fontWeight: '700',
+    marginTop: 1,
+    textAlign: 'center',
   },
   miniStatsRow: {
     flexDirection: 'row',

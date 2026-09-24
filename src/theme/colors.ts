@@ -1,63 +1,128 @@
-export const NBA_THEME = {
-  // Official NBA Identity Colors (Solid & Crisp)
-  nbaNavy: '#1D428A',       // Official NBA Blue
+export interface ThemeColors {
+  nbaNavy: string;
+  nbaNavyDark: string;
+  nbaNavyLight: string;
+  nbaRed: string;
+  nbaRedDark: string;
+  nbaRedLight: string;
+  nbaGold: string;
+  nbaGoldDark: string;
+  nbaGoldLight: string;
+  bg: string;
+  bgCard: string;
+  bgCardSecondary: string;
+  border: string;
+  borderDark: string;
+  text: string;
+  textDark: string;
+  textMuted: string;
+  textLight: string;
+  tabBarBg: string;
+  tabBarBorder: string;
+  success: string;
+  warning: string;
+  danger: string;
+  info: string;
+  primary: string;
+  secondary: string;
+  accent: string;
+}
+
+export const LIGHT_THEME: ThemeColors = {
+  // Official NBA Identity Colors
+  nbaNavy: '#1D428A',
   nbaNavyDark: '#122A58',
   nbaNavyLight: '#EBF3FF',
-  nbaRed: '#C8102E',        // Official NBA Scarlet
+  nbaRed: '#C8102E',
   nbaRedDark: '#990B21',
   nbaRedLight: '#FEE2E2',
-  nbaGold: '#D97706',       // Solid Golden Amber
+  nbaGold: '#D97706',
   nbaGoldDark: '#B45309',
   nbaGoldLight: '#FEF3C7',
-  
-  // Clean Solid Light Palette (Matching Internal Menu)
+
+  // Clean Light Palette
   bg: '#F8FAFC',
   bgCard: '#FFFFFF',
   bgCardSecondary: '#F1F5F9',
   border: '#E2E8F0',
   borderDark: '#CBD5E1',
-  
-  // Text
-  textDark: '#0F172A',
-  textMuted: '#64748B',
-  textLight: '#FFFFFF',
-  
-  // Status Colors
-  success: '#10B981',       // Cloud Synced Green
-  warning: '#F59E0B',       // Syncing / Local Warning
-  danger: '#EF4444',
-  info: '#0284C7',
-};
 
-export const THEME = {
-  bg: '#F8FAFC',
-  bgLight: '#F8FAFC',
-  bgCard: '#FFFFFF',
-  bgCardLight: '#FFFFFF',
-  border: '#E2E8F0',
-  borderLight: '#CBD5E1',
-  primary: '#1D428A',
-  secondary: '#C8102E',
-  accent: '#D97706',
+  // Text
   text: '#0F172A',
   textDark: '#0F172A',
   textMuted: '#64748B',
+  textLight: '#FFFFFF',
+
+  // Tab Bar
+  tabBarBg: '#FFFFFF',
+  tabBarBorder: '#E2E8F0',
+
+  // Status Colors
   success: '#10B981',
-  danger: '#EF4444',
   warning: '#F59E0B',
+  danger: '#EF4444',
+  info: '#0284C7',
+
+  primary: '#1D428A',
+  secondary: '#C8102E',
+  accent: '#D97706',
 };
+
+export const DARK_THEME: ThemeColors = {
+  // Premium NBA Dark Identity Colors
+  nbaNavy: '#3B82F6',
+  nbaNavyDark: '#1D428A',
+  nbaNavyLight: '#1E293B',
+  nbaRed: '#EF4444',
+  nbaRedDark: '#B91C1C',
+  nbaRedLight: '#450A0A',
+  nbaGold: '#F59E0B',
+  nbaGoldDark: '#D97706',
+  nbaGoldLight: '#451A03',
+
+  // Sleek Dark Palette
+  bg: '#0B0F19',
+  bgCard: '#151D2E',
+  bgCardSecondary: '#1E293B',
+  border: '#1E293B',
+  borderDark: '#334155',
+
+  // Text
+  text: '#F8FAFC',
+  textDark: '#F8FAFC',
+  textMuted: '#94A3B8',
+  textLight: '#FFFFFF',
+
+  // Tab Bar
+  tabBarBg: '#0F172A',
+  tabBarBorder: '#1E293B',
+
+  // Status Colors
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  info: '#38BDF8',
+
+  primary: '#3B82F6',
+  secondary: '#EF4444',
+  accent: '#F59E0B',
+};
+
+// Default backwards compatibility
+export const NBA_THEME = LIGHT_THEME;
+export const THEME = LIGHT_THEME;
 
 // Vibrant, distinctive solid colors for each rarity
 export const RARITY_COLORS = {
   ICON: {
-    border: '#CA8A04', // Championship Gold
-    cardBg: '#FFFFFF', // Pure Pearl White (FC Icon Style)
+    border: '#D4AF37', // Championship Luxury Gold
+    cardBg: '#FFFDF5', // Warm Pearl Ivory (softer than harsh stark white)
     headerBg: '#FEF9C3', // Pale Gold Tint
-    nameBoxBg: '#1E293B', // Dark Contrast Box
+    nameBoxBg: '#0F172A', // Dark Navy Box
     badgeBg: '#FEF08A', // Vibrant Gold Tag
-    text: '#0F172A',
+    text: '#FFFFFF', // High-contrast White Text
     ovrText: '#CA8A04', // Deep Gold OVR
-    subText: '#64748B',
+    subText: '#FEF08A', // Gold Subtext
     badgeText: '#854D0E',
     label: 'ICONO',
     glowColor: 'rgba(202, 138, 4, 0.35)',

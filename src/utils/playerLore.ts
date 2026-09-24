@@ -53,6 +53,50 @@ const CURATED_LORE: Record<string, string> = {
     'Temporada 2003-04: 4 veces DPOY y ancla del campeonato de los Pistons. Promedió 9.5 PTS, 12.4 REB y 3.0 BLQ frenando a los Lakers más poderosos con su intimidación interior.',
   'Chauncey Billups':
     'Temporada 2003-04: MVP de las Finales con Detroit. Promedió 21.0 PTS y 5.2 AST con 47.1% en triples, ganándose el apodo de "Mr. Big Shot" por su frialdad en momentos decisivos.',
+  'Wilt Chamberlain':
+    'Temporada 1961-62: Promedió 50.4 PTS y 25.7 REB por partido, incluyendo la mítica noche de los 100 puntos. Posee 72 récords individuales de la NBA y transformó las reglas del juego gracias a su dominio físico colosal.',
+  'Bill Russell':
+    'Temporada 1964-65: 11 veces campeón de la NBA en 13 temporadas y 5 veces MVP. Promedió 24.7 REB y 5.3 AST, erigiéndose como el mayor ganador, líder y ancla defensiva en la historia del deporte.',
+  'Kevin Durant':
+    'Temporada 2013-14 / 2017: MVP de la temporada (32.0 PTS, 7.4 REB, 5.5 AST) y 2 veces MVP de las Finales. Anotador imparable de 2.11m con rango de tiro infinito y 4 títulos de máximo anotador de la NBA.',
+  'Russell Westbrook':
+    'Temporada 2016-17: MVP de la NBA y récord histórico con 42 triples-dobles en una temporada. Promedió 31.6 PTS, 10.7 REB y 10.4 AST con una ferocidad competitiva y potencia en transición irrepetible.',
+  'Oscar Robertson':
+    'Temporada 1961-62 / 1970-71: "The Big O", primer jugador en promediar un triple-doble durante toda una temporada (30.8 PTS, 12.5 REB, 11.4 AST). Campeón NBA y MVP con un IQ de juego adelantado a su tiempo.',
+  'Julius Erving':
+    'Temporada 1982-83: "Dr. J", el hombre que llevó el baloncesto al aire con sus mates desde la línea de tiros libres y estilo acrobático. MVP de la NBA y campeón con los legendarios 76ers del "Fo, Fo, Fo".',
+  'Karl Malone':
+    'Temporada 1997-98: "The Mailman", 2 veces MVP de la NBA y 3er máximo anotador de la historia (36.928 pts). Promedió 27.0 PTS y 10.3 REB formando con Stockton el pick and roll más letal jamás visto.',
+  'John Stockton':
+    'Temporada 1997-98: Líder histórico absoluto en asistencias (15.806 AST) y robos (3.265 ROB). Promedió 14.5 AST y 3.0 ROB con un pase milimétrico y una dureza implacable en el puesto de base.',
+  'Dwyane Wade':
+    'Temporada 2005-06: MVP de las Finales promediando 34.7 PTS, 7.8 REB y 2.7 ROB para remontar un 0-2 ante Dallas. 3 veces campeón con Miami Heat y uno de los escoltas más decisivos y electrizantes de la historia.',
+  'David Robinson':
+    'Temporada 1993-94 / 1995: "El Almirante", MVP de la NBA, DPOY y autor de un cuádruple-doble y un partido de 71 puntos. 2 veces campeón con San Antonio Spurs combinando velocidad, tapones y presencia física descomunal.',
+  'Kyrie Irving':
+    'Temporada 2015-16: Campeón NBA y autor de "The Shot", el triple decisivo en el Game 7 de las Finales 2016 ante los Warriors del 73-9. Poseedor del mejor manejo de balón (handles) y finalización acrobática de la historia.',
+  'Patrick Ewing':
+    'Temporada 1993-94: 11 veces All-Star y eterno rey del Madison Square Garden. Promedió 28.6 PTS, 10.9 REB y 4.0 BLQ guiando a los New York Knicks a las Finales con su tiro tras media vuelta y garra defensiva.',
+  'Tracy McGrady':
+    'Temporada 2002-03 / 2004: 2 veces máximo anotador de la NBA (32.1 PTS, 6.5 REB, 5.5 AST) y autor de los míticos 13 puntos en 35 segundos. Uno de los talentos ofensivos más plásticos y letales de la era moderna.',
+  'Steve Nash':
+    'Temporada 2004-05 / 2005-06: 2 veces MVP consecutivo de la NBA al mando de los Phoenix Suns de los "7 segundos o menos". 4 veces miembro del club 50-40-90 y uno de los directores de juego más visionarios.',
+  'Jason Kidd':
+    'Temporada 2001-02 / 2011: Campeón NBA y 2do máximo asistente histórico (12.091 AST). Maestro indiscutido del contraataque, triple-doble y defensa perimetral llevando a los Nets a 2 Finales consecutivas.',
+  'Dominique Wilkins':
+    'Temporada 1985-86: "The Human Highlight Film", máximo anotador de la liga con 30.3 PTS y 2 veces campeón del Slam Dunk Contest con mates molino descomunales que desafiaban la gravedad en Atlanta.',
+  'Vince Carter':
+    'Temporada 2000-01: "Vinsanity", protagonista del mejor concurso de mates de todos los tiempos y récord de longevidad en 4 décadas. Promedió 27.6 PTS, 5.5 REB y 3.9 AST electrizando a los Toronto Raptors.',
+  'Carmelo Anthony':
+    'Temporada 2012-13: Máximo anotador de la NBA con los New York Knicks (28.7 PTS y 6.9 REB). Maestro de la triple amenaza, tiro de media distancia y triple medallista de oro olímpico con la selección de EE.UU.',
+  'Klay Thompson':
+    'Temporada 2015-16: 4 veces campeón con Golden State Warriors. Posee el récord histórico de 14 triples en un partido y 37 puntos en un solo cuarto; tirador de élite en racha (Game 6 Klay) y defensor perimetral.',
+  'Dikembe Mutombo':
+    'Temporada 2000-01: "Mount Mutombo", 4 veces Jugador Defensivo del Año (DPOY) y 2do máximo taponador de la historia (3.289 BLQ). Su icónico gesto del dedo ("Not in my house") definió la intimidación en la pintura.',
+  'Chris Webber':
+    'Temporada 2001-02: Líder del quinteto más vistoso de la historia moderna con los Sacramento Kings. Promedió 24.5 PTS, 10.1 REB y 4.8 AST revolucionando el puesto de ala-pívot con su pase y tiro exterior.',
+  'Draymond Green':
+    'Temporada 2016-17: Jugador Defensivo del Año (DPOY) y 4 veces campeón con Golden State Warriors. Ancla táctica defensiva capaz de marcar a las 5 posiciones y director de orquesta desde el poste alto.',
   'Penny Hardaway':
     'Temporada 1994-95: 1er Equipo All-NBA con solo 23 años. Promedió 20.9 PTS, 7.2 AST, 4.4 REB y 1.7 ROB guiando a Orlando a las Finales junto a Shaq.',
   'Charles Barkley':

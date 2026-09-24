@@ -12,6 +12,7 @@ import { SyncService, SyncStatus } from '../../services/sync';
 import { AuthService, ManagerProfile } from '../../services/auth';
 import { HapticsService } from '../../services/haptics';
 import { NBA_THEME } from '../../theme/colors';
+import { useTheme } from '../../context/ThemeContext';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setAchievementsModalVisible } from '../../store/slices/squadSlice';
 import { evaluateAchievements } from '../../data/achievements';
@@ -29,6 +30,7 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
+  const { colors, isDark, toggleTheme } = useTheme();
 
   const cards = useAppSelector((state) => state.squad.cards);
   const claimedAchievements = useAppSelector((state) => state.squad.claimedAchievements);
@@ -66,14 +68,14 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
   const getSyncIcon = () => {
     switch (syncStatus) {
       case 'SYNCING':
-        return <ActivityIndicator size={12} color={NBA_THEME.nbaNavy} />;
+        return <ActivityIndicator size={12} color={colors.primary} />;
       case 'SYNCED':
         return <Ionicons name="cloud-done" size={14} color="#10B981" />;
       case 'ERROR':
         return <Ionicons name="alert-circle" size={14} color="#EF4444" />;
       case 'LOCAL_ONLY':
       default:
-        return <Ionicons name="cloud-offline-outline" size={14} color="#94A3B8" />;
+        return <Ionicons name="cloud-offline-outline" size={14} color={colors.textMuted} />;
     }
   };
 
@@ -101,20 +103,45 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
     dispatch(setAchievementsModalVisible(true));
   };
 
+  const handleToggleTheme = async () => {
+    await HapticsService.selectionTick();
+    await toggleTheme();
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) + 6 }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: Math.max(insets.top, 16) + 6,
+          backgroundColor: colors.bgCard,
+          borderBottomColor: colors.border,
+        },
+      ]}
+    >
       {/* Left: User Vector Icon & Manager Profile Button */}
       <TouchableOpacity
         style={styles.profileButton}
         onPress={handleProfilePress}
         activeOpacity={0.7}
       >
-        <View style={styles.userAvatarBox}>
-          <Ionicons name="person" size={18} color="#006BB6" />
+        <View
+          style={[
+            styles.userAvatarBox,
+            {
+              backgroundColor: isDark ? colors.bgCardSecondary : '#EFF6FF',
+              borderColor: isDark ? colors.border : '#BFDBFE',
+            },
+          ]}
+        >
+          <Ionicons name="person" size={18} color={colors.primary} />
         </View>
 
         <View style={styles.managerInfo}>
-          <Text style={styles.managerName} numberOfLines={1}>
+          <Text
+            style={[styles.managerName, { color: colors.text }]}
+            numberOfLines={1}
+          >
             {profile.username || t.header.rookieManager}
           </Text>
           <View style={styles.syncRow}>
@@ -122,8 +149,9 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
             <Text
               style={[
                 styles.syncText,
+                { color: colors.textMuted },
                 syncStatus === 'SYNCED' && styles.syncTextSynced,
-                syncStatus === 'SYNCING' && styles.syncTextSyncing,
+                syncStatus === 'SYNCING' && { color: colors.primary },
                 syncStatus === 'ERROR' && styles.syncTextError,
               ]}
             >
@@ -133,18 +161,44 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
         </View>
       </TouchableOpacity>
 
-      {/* Right: Trophy Achievements Button + Coins Counter */}
+      {/* Right: Theme Toggle + Trophy Achievements Button + Coins Counter */}
       <View style={styles.rightActions}>
+        {/* Theme Toggle Button (Dark / Light Mode) */}
+        <TouchableOpacity
+          style={[
+            styles.themeToggleButton,
+            {
+              backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9',
+              borderColor: colors.border,
+            },
+          ]}
+          onPress={handleToggleTheme}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={isDark ? 'sunny' : 'moon'}
+            size={17}
+            color={isDark ? '#FBBF24' : '#64748B'}
+          />
+        </TouchableOpacity>
+
         {/* Trophy / Achievements Button */}
         <TouchableOpacity
-          style={[styles.trophyButton, unclaimedCount > 0 && styles.trophyButtonHighlight]}
+          style={[
+            styles.trophyButton,
+            {
+              backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9',
+              borderColor: colors.border,
+            },
+            unclaimedCount > 0 && styles.trophyButtonHighlight,
+          ]}
           onPress={handleAchievementsPress}
           activeOpacity={0.7}
         >
           <Ionicons
             name="trophy-outline"
             size={18}
-            color={unclaimedCount > 0 ? '#B45309' : '#64748B'}
+            color={unclaimedCount > 0 ? '#B45309' : colors.textMuted}
           />
           {unclaimedCount > 0 && (
             <View style={styles.badgeCount}>
@@ -154,9 +208,17 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
         </TouchableOpacity>
 
         {/* Coins Counter */}
-        <View style={styles.coinsBadge}>
-          <Ionicons name="cash-outline" size={16} color="#D97706" />
-          <Text style={styles.coinsAmount}>
+        <View
+          style={[
+            styles.coinsBadge,
+            {
+              backgroundColor: isDark ? '#451A03' : '#FEF3C7',
+              borderColor: isDark ? '#D97706' : '#FDE68A',
+            },
+          ]}
+        >
+          <Ionicons name="cash-outline" size={16} color={isDark ? '#F59E0B' : '#D97706'} />
+          <Text style={[styles.coinsAmount, { color: isDark ? '#FEF3C7' : '#92400E' }]}>
             {coins.toLocaleString()}
           </Text>
         </View>
@@ -225,6 +287,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  themeToggleButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   trophyButton: {
     width: 34,

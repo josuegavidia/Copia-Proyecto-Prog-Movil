@@ -1,7 +1,8 @@
 import { NBAPlayer, CardRarity, Position, Conference, UnitType } from '../../types';
+import { getPlayerBio } from '../playerBioData';
 
 export const headshot = (id: number | string) =>
-  `https://cdn.nba.com/headshots/nba/latest/1040x760/${id}.png`;
+  `https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/${id}.png&w=350&h=254`;
 
 export const determineRarity = (ovr: number): CardRarity => {
   if (ovr >= 93) return 'DIAMOND';
@@ -30,28 +31,34 @@ export const createPlayer = (
   rebound: number,
   unitType: UnitType = 'STARTER',
   nickname?: string
-): NBAPlayer => ({
-  id,
-  nbaPersonId,
-  name,
-  nickname,
-  team,
-  teamAbbr,
-  conference,
-  position,
-  secondaryPosition,
-  number,
-  unitType,
-  rarity: determineRarity(ovr),
-  stats: {
-    ovr,
-    offense,
-    defense,
-    threePoint,
-    dunk,
-    speed,
-    playmaking,
-    rebound,
-  },
-  imageUrl: headshot(nbaPersonId),
-});
+): NBAPlayer => {
+  const bio = getPlayerBio(name, position);
+  return {
+    id,
+    nbaPersonId,
+    name,
+    nickname,
+    team,
+    teamAbbr,
+    conference,
+    position,
+    secondaryPosition,
+    number,
+    unitType,
+    rarity: determineRarity(ovr),
+    stats: {
+      ovr,
+      offense,
+      defense,
+      threePoint,
+      dunk,
+      speed,
+      playmaking,
+      rebound,
+    },
+    imageUrl: headshot(nbaPersonId),
+    height: bio.height,
+    country: bio.country,
+    countryFlag: bio.countryFlag,
+  };
+};

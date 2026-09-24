@@ -86,3 +86,62 @@ export const openPack = (pack: PackDefinition): UserCard[] => {
     obtainedAt: new Date().toISOString(),
   }));
 };
+
+export const openStarterTeamPack = (teamAbbr: string): UserCard[] => {
+  const cleanAbbr = teamAbbr.toUpperCase().trim();
+  const teamPlayers = NBA_PLAYERS_DATA.filter(
+    (p) => p.teamAbbr?.toUpperCase() === cleanAbbr || p.team?.toLowerCase().includes(cleanAbbr.toLowerCase())
+  );
+
+  const pool = teamPlayers.length > 0 ? teamPlayers : NBA_PLAYERS_DATA;
+  const selectedCards: NBAPlayer[] = [];
+  const chosenIds = new Set<string>();
+
+  // Probabilidades de sobre inicial: Mayoritariamente bronce y plata, muy baja probabilidad de oro y diamante
+  const chances = {
+    bronze: 0.65,
+    silver: 0.28,
+    gold: 0.06,
+    diamond: 0.01,
+  };
+
+  for (let i = 0; i < 3; i++) {
+    const desiredRarity = pickRarity(chances);
+
+    // Buscar jugador con esa rareza en el equipo
+    let candidates = pool.filter(
+      (p) => p.rarity === desiredRarity && !chosenIds.has(p.id)
+    );
+
+    // Si no hay de esa rareza, tomar de cualquier rareza no elegida aún de ese equipo
+    if (candidates.length === 0) {
+      candidates = pool.filter((p) => !chosenIds.has(p.id));
+    }
+    if (candidates.length === 0) {
+      candidates = pool;
+    }
+
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    const chosenPlayer = candidates[randomIndex];
+    chosenIds.add(chosenPlayer.id);
+    selectedCards.push(chosenPlayer);
+  }
+
+  // Ordenar por OVR ascendente para revelar la mejor carta al final
+  selectedCards.sort((a, b) => {
+    if (a.stats.ovr !== b.stats.ovr) {
+      return a.stats.ovr - b.stats.ovr;
+    }
+    return RARITY_HIERARCHY[a.rarity] - RARITY_HIERARCHY[b.rarity];
+  });
+
+  const timestamp = Date.now();
+  return selectedCards.map((player, idx) => ({
+    instanceId: `${player.id}-${timestamp}-${Math.random().toString(36).substr(2, 9)}-${idx}`,
+    playerId: player.id,
+    player,
+    obtainedAt: new Date().toISOString(),
+    isLocked: false,
+    gamesPlayed: 0,
+  }));
+};

@@ -20,6 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setAchievementsModalVisible, recycleDuplicates } from '../store/slices/squadSlice';
 import { useTranslation } from '../i18n/useTranslation';
+import { getCardRecycleValue } from '../data/packs';
+import { useTheme } from '../context/ThemeContext';
 
 interface CollectionScreenProps {
   cards?: UserCard[];
@@ -34,6 +36,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
   onRecycleDuplicates,
   onDeleteCard,
 }) => {
+  const { colors, isDark } = useTheme();
   const dispatch = useAppDispatch();
   const reduxCards = useAppSelector((state) => state.squad.cards);
   const cards = propsCards || reduxCards;
@@ -58,15 +61,25 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
   const uniqueCount = collectedMap.size;
   const progressPercent = Math.round((uniqueCount / totalMasterCount) * 100);
 
-  // Duplicate calculation
-  const idCounts: Record<string, number> = {};
+  // Duplicate calculation by card rarity
+  const seenPlayerIds = new Set<string>();
+  const duplicateCards: UserCard[] = [];
   cards.forEach((c) => {
-    idCounts[c.playerId] = (idCounts[c.playerId] || 0) + 1;
+    const key = c.playerId || c.player?.id;
+    if (key) {
+      if (seenPlayerIds.has(key)) {
+        duplicateCards.push(c);
+      } else {
+        seenPlayerIds.add(key);
+      }
+    }
   });
-  const duplicateCount = Object.values(idCounts).reduce(
-    (acc, count) => acc + (count > 1 ? count - 1 : 0),
-    0
-  );
+
+  const duplicateCount = duplicateCards.length;
+  const duplicateCoinsTotal = duplicateCards.reduce((acc, c) => {
+    const rarity = c.player?.rarity || 'BRONZE';
+    return acc + getCardRecycleValue(rarity);
+  }, 0);
 
   const handleRecycleDuplicates = async () => {
     if (duplicateCount === 0) {
@@ -75,15 +88,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
     }
 
     await HapticsService.selectionTick();
-    const coinsEarned = duplicateCount * 150;
+    const coinsEarned = duplicateCoinsTotal;
 
     Alert.alert(
       'Reciclar Duplicados',
-      `¿Deseas reciclar ${duplicateCount} carta(s) repetida(s) a cambio de +${coinsEarned} monedas?`,
+      `¿Deseas reciclar ${duplicateCount} carta(s) repetida(s) a cambio de +${coinsEarned.toLocaleString()} monedas?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: `Reciclar (+${coinsEarned})`,
+          text: `Reciclar (+${coinsEarned.toLocaleString()})`,
           onPress: async () => {
             await HapticsService.celebrate();
             if (onRecycleDuplicates) {
@@ -199,32 +212,32 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                   HapticsService.selectionTick();
                   setInspectedPlayer(item);
                 }}
-                style={styles.lockedCardSlot}
+                style={[styles.lockedCardSlot, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
               >
-                <View style={styles.lockedCardHeader}>
-                  <Text style={styles.lockedOvrText}>{item.stats.ovr}</Text>
-                  <Text style={styles.lockedPosText}>{item.position}</Text>
-                  <Text style={styles.lockedUnitTag}>
+                <View style={[styles.lockedCardHeader, { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' }]}>
+                  <Text style={[styles.lockedOvrText, { color: colors.textMuted }]}>{item.stats.ovr}</Text>
+                  <Text style={[styles.lockedPosText, { color: colors.textMuted }]}>{item.position}</Text>
+                  <Text style={[styles.lockedUnitTag, { color: colors.textMuted, backgroundColor: isDark ? colors.border : '#E2E8F0' }]}>
                     {item.unitType === 'STARTER' ? 'TITULAR' : 'SUPLENTE'}
                   </Text>
                 </View>
 
                 <View style={styles.lockedSilhouetteBox}>
-                  <Ionicons name="person" size={54} color="#CBD5E1" />
-                  <Ionicons name="lock-closed" size={20} color="#64748B" style={styles.lockIconOverlay} />
+                  <Ionicons name="person" size={54} color={isDark ? '#334155' : '#CBD5E1'} />
+                  <Ionicons name="lock-closed" size={20} color={isDark ? '#64748B' : '#64748B'} style={styles.lockIconOverlay} />
                 </View>
 
-                <Text numberOfLines={1} style={styles.lockedPlayerName}>
+                <Text numberOfLines={1} style={[styles.lockedPlayerName, { color: colors.textMuted }]}>
                   {item.name}
                 </Text>
 
                 <View
                   style={[
                     styles.lockedFooter,
-                    { backgroundColor: team.primaryColor ? `${team.primaryColor}22` : '#F1F5F9' },
+                    { backgroundColor: team.primaryColor ? `${team.primaryColor}22` : isDark ? colors.bgCardSecondary : '#F1F5F9' },
                   ]}
                 >
-                  <Text style={[styles.lockedHelpText, { color: team.primaryColor || '#0F172A' }]}>
+                  <Text style={[styles.lockedHelpText, { color: team.primaryColor || colors.text }]}>
                     Toca para ver Ficha
                   </Text>
                 </View>
@@ -246,8 +259,8 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
       const collectedForQuinteto = classicTeam.starters.filter((p) => collectedMap.has(p.id));
 
       return (
-        <View style={[styles.teamAlbumContainer, { backgroundColor: '#FEFCE8' }]}>
-          <View style={[styles.teamAlbumBanner, { backgroundColor: '#854D0E' }]}>
+        <View style={[styles.teamAlbumContainer, { backgroundColor: isDark ? colors.bg : '#FEFCE8' }]}>
+          <View style={[styles.teamAlbumBanner, { backgroundColor: isDark ? '#1E293B' : '#854D0E' }]}>
             <TouchableOpacity
               onPress={() => setSelectedClassicTeamId(null)}
               style={styles.backBtn}
@@ -265,9 +278,9 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.bannerTeamName}>{classicTeam.name}</Text>
-                  <View style={styles.classicTeamOvrBadge}>
-                    <Ionicons name="flash" size={10} color="#78350F" />
-                    <Text style={styles.classicTeamOvrText}>{classicTeam.ovr} OVR</Text>
+                  <View style={[styles.classicTeamOvrBadge, isDark && { backgroundColor: '#2E2210', borderColor: '#CA8A04' }]}>
+                    <Ionicons name="flash" size={10} color={isDark ? '#FDE047' : '#78350F'} />
+                    <Text style={[styles.classicTeamOvrText, isDark && { color: '#FEF08A' }]}>{classicTeam.ovr} OVR</Text>
                   </View>
                 </View>
                 <Text style={styles.bannerTeamStats}>
@@ -314,27 +327,31 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                     HapticsService.selectionTick();
                     setInspectedPlayer(item);
                   }}
-                  style={[styles.lockedCardSlot, styles.lockedLegendCardSlot]}
+                  style={[
+                    styles.lockedCardSlot,
+                    styles.lockedLegendCardSlot,
+                    isDark && { backgroundColor: '#141B29', borderColor: '#B45309' },
+                  ]}
                 >
-                  <View style={[styles.lockedCardHeader, { backgroundColor: '#FEF9C3' }]}>
-                    <Text style={[styles.lockedOvrText, { color: '#B45309' }]}>{item.stats.ovr}</Text>
-                    <Text style={[styles.lockedPosText, { color: '#78350F' }]}>{item.position}</Text>
-                    <Text style={[styles.lockedUnitTag, { color: '#854D0E', backgroundColor: '#FEF08A' }]}>
+                  <View style={[styles.lockedCardHeader, { backgroundColor: isDark ? '#1E2738' : '#FEF9C3' }]}>
+                    <Text style={[styles.lockedOvrText, { color: isDark ? '#FBBF24' : '#B45309' }]}>{item.stats.ovr}</Text>
+                    <Text style={[styles.lockedPosText, { color: isDark ? '#FDE68A' : '#78350F' }]}>{item.position}</Text>
+                    <Text style={[styles.lockedUnitTag, { color: isDark ? '#FEF08A' : '#854D0E', backgroundColor: isDark ? '#451A03' : '#FEF08A' }]}>
                       {item.classicTeamYear || 'ICONO'}
                     </Text>
                   </View>
 
                   <View style={styles.lockedSilhouetteBox}>
-                    <Ionicons name="trophy" size={48} color="#FEF08A" />
-                    <Ionicons name="lock-closed" size={18} color="#B45309" style={styles.lockIconOverlay} />
+                    <Ionicons name="trophy" size={48} color={isDark ? '#78350F' : '#FEF08A'} />
+                    <Ionicons name="lock-closed" size={18} color={isDark ? '#F59E0B' : '#B45309'} style={styles.lockIconOverlay} />
                   </View>
 
-                  <Text numberOfLines={1} style={[styles.lockedPlayerName, { color: '#78350F' }]}>
+                  <Text numberOfLines={1} style={[styles.lockedPlayerName, { color: isDark ? '#E2E8F0' : '#78350F' }]}>
                     {item.name}
                   </Text>
 
-                  <View style={[styles.lockedFooter, { backgroundColor: '#FEF9C3' }]}>
-                    <Text style={[styles.lockedHelpText, { color: '#854D0E' }]}>
+                  <View style={[styles.lockedFooter, { backgroundColor: isDark ? '#1E2738' : '#FEF9C3' }]}>
+                    <Text style={[styles.lockedHelpText, { color: isDark ? '#FDE047' : '#854D0E' }]}>
                       Toca para ver Ficha
                     </Text>
                   </View>
@@ -346,129 +363,117 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
       );
     }
 
-    // 2. Overview of all 20 Equipos Iconos
-    let teamsList = CLASSIC_TEAMS;
+    // List of Legends (All 50 All-Time Icons)
+    let legendsList = ALL_ICON_PLAYERS;
     if (searchQuery.trim().length > 0) {
       const q = searchQuery.toLowerCase();
-      teamsList = teamsList.filter(
-        (t) =>
-          t.name.toLowerCase().includes(q) ||
-          t.franchise.toLowerCase().includes(q) ||
-          t.year.toLowerCase().includes(q) ||
-          t.starters.some((p) => p.name.toLowerCase().includes(q))
+      legendsList = legendsList.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.team.toLowerCase().includes(q) ||
+          p.teamAbbr.toLowerCase().includes(q) ||
+          (p.nickname && p.nickname.toLowerCase().includes(q)) ||
+          (p.classicTeamYear && p.classicTeamYear.toLowerCase().includes(q))
       );
     }
 
     const totalCollectedIcons = ALL_ICON_PLAYERS.filter((p) => collectedMap.has(p.id)).length;
+    const legendsPct = Math.round((totalCollectedIcons / ALL_ICON_PLAYERS.length) * 100);
 
     return (
       <View style={{ flex: 1 }}>
-        <View style={styles.legendsHeaderBanner}>
+        <View style={[styles.legendsHeaderBanner, isDark && { backgroundColor: '#1E2738', borderColor: '#B45309' }]}>
           <View style={styles.legendsHeaderLeft}>
-            <Ionicons name="sparkles" size={20} color="#713F12" />
+            <Ionicons name="sparkles" size={20} color={isDark ? '#FDE047' : '#713F12'} />
             <View>
-              <Text style={styles.legendsHeaderTitle}>EQUIPOS ICONOS & QUINTETOS HISTÓRICOS</Text>
-              <Text style={styles.legendsHeaderSub}>
-                {CLASSIC_TEAMS.length} Quintetos Míticos · {totalCollectedIcons} de {ALL_ICON_PLAYERS.length} Leyendas
+              <Text style={[styles.legendsHeaderTitle, isDark && { color: '#FEF08A' }]}>GALERÍA DE GRANDES LEYENDAS</Text>
+              <Text style={[styles.legendsHeaderSub, isDark && { color: '#FDE68A' }]}>
+                {totalCollectedIcons} de {ALL_ICON_PLAYERS.length} Leyendas Inmortales ({legendsPct}%)
               </Text>
             </View>
           </View>
         </View>
 
         {/* Search */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={16} color="#64748B" />
+        <View style={[styles.searchRow, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+          <View style={[styles.searchBox, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: 1 }]}>
+            <Ionicons name="search" size={16} color={colors.textMuted} />
             <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar quinteto o leyenda (ej. Bulls 96, Jordan, Shaq)..."
-              placeholderTextColor="#94A3B8"
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Buscar leyenda (ej. Jordan, Kobe, Shaq, Bird, Magic)..."
+              placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close" size={16} color="#64748B" />
+                <Ionicons name="close" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* List of Classic Quintetos */}
+        {/* Grid of All-Time Legend Cards */}
         <FlatList
-          data={teamsList}
+          data={legendsList}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.classicTeamsList}
+          numColumns={2}
+          contentContainerStyle={styles.teamGrid}
+          columnWrapperStyle={styles.columnWrapper}
           renderItem={({ item }) => {
-            const collectedCount = item.starters.filter((p) => collectedMap.has(p.id)).length;
-            const pct = Math.round((collectedCount / 5) * 100);
+            const isUnlocked = collectedMap.has(item.id);
+
+            if (isUnlocked) {
+              return (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    HapticsService.selectionTick();
+                    setInspectedPlayer(item);
+                  }}
+                  style={styles.unlockedCardSlot}
+                >
+                  <View pointerEvents="none">
+                    <NBACard player={item} size="md" />
+                  </View>
+                </TouchableOpacity>
+              );
+            }
 
             return (
               <TouchableOpacity
-                activeOpacity={0.88}
-                onPress={async () => {
-                  await HapticsService.selectionTick();
-                  setSelectedClassicTeamId(item.id);
+                activeOpacity={0.85}
+                onPress={() => {
+                  HapticsService.selectionTick();
+                  setInspectedPlayer(item);
                 }}
-                style={styles.classicTeamCard}
+                style={[
+                  styles.lockedCardSlot,
+                  styles.lockedLegendCardSlot,
+                  isDark && { backgroundColor: '#141B29', borderColor: '#B45309' },
+                ]}
               >
-                <View style={styles.classicTeamCardTop}>
-                  <Image source={{ uri: item.logoUrl }} style={styles.classicTeamLogo} resizeMode="contain" />
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.classicTeamTitleRow}>
-                      <Text style={styles.classicTeamName}>{item.name}</Text>
-                      <View style={styles.classicTeamOvrBadge}>
-                        <Ionicons name="flash" size={10} color="#78350F" />
-                        <Text style={styles.classicTeamOvrText}>{item.ovr} OVR</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.classicTeamFranchise}>{item.franchise} · {item.year}</Text>
-                  </View>
+                <View style={[styles.lockedCardHeader, { backgroundColor: isDark ? '#1E2738' : '#FEF9C3' }]}>
+                  <Text style={[styles.lockedOvrText, { color: isDark ? '#FBBF24' : '#B45309' }]}>{item.stats.ovr}</Text>
+                  <Text style={[styles.lockedPosText, { color: isDark ? '#FDE68A' : '#78350F' }]}>{item.position}</Text>
+                  <Text style={[styles.lockedUnitTag, { color: isDark ? '#FEF08A' : '#854D0E', backgroundColor: isDark ? '#451A03' : '#FEF08A' }]}>
+                    {item.classicTeamYear || 'LEYENDA'}
+                  </Text>
                 </View>
 
-                <Text numberOfLines={2} style={styles.classicTeamDesc}>
-                  {item.description}
+                <View style={styles.lockedSilhouetteBox}>
+                  <Ionicons name="trophy" size={48} color={isDark ? '#78350F' : '#FEF08A'} />
+                  <Ionicons name="lock-closed" size={18} color={isDark ? '#F59E0B' : '#B45309'} style={styles.lockIconOverlay} />
+                </View>
+
+                <Text numberOfLines={1} style={[styles.lockedPlayerName, { color: isDark ? '#E2E8F0' : '#78350F' }]}>
+                  {item.name}
                 </Text>
 
-                {/* Starters Preview Pills */}
-                <View style={styles.startersPillsRow}>
-                  {item.starters.map((p) => {
-                    const isUnlocked = collectedMap.has(p.id);
-                    return (
-                      <View
-                        key={p.id}
-                        style={[
-                          styles.starterPill,
-                          isUnlocked && styles.starterPillUnlocked,
-                        ]}
-                      >
-                        <Text style={[styles.starterPillPos, isUnlocked && styles.starterPillPosUnlocked]}>
-                          {p.position}
-                        </Text>
-                        <Text numberOfLines={1} style={[styles.starterPillName, isUnlocked && styles.starterPillNameUnlocked]}>
-                          {p.name.split(' ').pop()}
-                        </Text>
-                        {isUnlocked && <Ionicons name="checkmark-circle" size={10} color="#15803D" />}
-                      </View>
-                    );
-                  })}
-                </View>
-
-                {/* Progress Bar & CTA */}
-                <View style={styles.classicTeamCardFooter}>
-                  <View style={styles.classicTeamProgressWrap}>
-                    <View style={styles.classicTeamProgressBarBg}>
-                      <View style={[styles.classicTeamProgressBarFill, { width: `${pct}%` }]} />
-                    </View>
-                    <Text style={styles.classicTeamProgressText}>
-                      {collectedCount}/5 Coleccionados ({pct}%)
-                    </Text>
-                  </View>
-
-                  <View style={styles.viewQuintetoBtn}>
-                    <Text style={styles.viewQuintetoBtnText}>Ver Quinteto</Text>
-                    <Ionicons name="chevron-forward" size={12} color="#78350F" />
-                  </View>
+                <View style={[styles.lockedFooter, { backgroundColor: isDark ? '#1E2738' : '#FEF9C3' }]}>
+                  <Text style={[styles.lockedHelpText, { color: isDark ? '#FDE047' : '#854D0E' }]}>
+                    {item.teamAbbr} · {item.stats.ovr} OVR
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
@@ -503,19 +508,19 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
 
     return (
       <View style={{ flex: 1 }}>
-        <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={16} color="#64748B" />
+        <View style={[styles.searchRow, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+          <View style={[styles.searchBox, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: 1 }]}>
+            <Ionicons name="search" size={16} color={colors.textMuted} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholder="Buscar por jugador o equipo..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close" size={16} color="#64748B" />
+                <Ionicons name="close" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -559,14 +564,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
     <View
       style={[
         styles.container,
+        { backgroundColor: colors.bg },
         activeTeam && { backgroundColor: `${activeTeam.primaryColor}12` },
       ]}
     >
       {/* Top Album HUD */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <View>
-          <Text style={styles.topTitle}>{t.collection.title.toUpperCase()}</Text>
-          <Text style={styles.topSubtitle}>
+          <Text style={[styles.topTitle, { color: colors.text }]}>{t.collection.title.toUpperCase()}</Text>
+          <Text style={[styles.topSubtitle, { color: colors.textMuted }]}>
             {uniqueCount} {t.common.of} {totalMasterCount} {t.common.totalCards.toLowerCase()} ({progressPercent}%)
           </Text>
         </View>
@@ -578,7 +584,13 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
               await HapticsService.selectionTick();
               dispatch(setAchievementsModalVisible(true));
             }}
-            style={styles.trophyHeaderBtn}
+            style={[
+              styles.trophyHeaderBtn,
+              {
+                backgroundColor: isDark ? colors.bgCardSecondary : '#FEF3C7',
+                borderColor: isDark ? '#B45309' : '#FDE68A',
+              },
+            ]}
           >
             <Ionicons name="trophy-outline" size={16} color="#B45309" />
           </TouchableOpacity>
@@ -591,7 +603,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
             >
               <Ionicons name="refresh" size={12} color="#FFFFFF" />
               <Text style={styles.recycleBtnText}>
-                {duplicateCount} (+{duplicateCount * 150})
+                {duplicateCount} (+{duplicateCoinsTotal.toLocaleString()})
               </Text>
             </TouchableOpacity>
           )}
@@ -599,25 +611,27 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
       </View>
 
       {/* Progress Bar */}
-      <View style={styles.progressBarBg}>
+      <View style={[styles.progressBarBg, { backgroundColor: isDark ? '#1E293B' : '#E2E8F0' }]}>
         <View
           style={[styles.progressBarFill, { width: `${progressPercent}%` }]}
         />
       </View>
 
       {/* Category Selector (Este, Oeste, Equipos, Iconos, Todos) */}
-      <View style={styles.categoriesBar}>
+      <View style={[styles.categoriesBar, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => handleCategoryChange('EAST')}
           style={[
             styles.catButton,
+            { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' },
             currentCategory === 'EAST' && styles.catButtonActive,
           ]}
         >
-          <Ionicons name="compass" size={13} color={currentCategory === 'EAST' ? '#FFFFFF' : '#64748B'} />
+          <Ionicons name="compass" size={13} color={currentCategory === 'EAST' ? '#FFFFFF' : colors.textMuted} />
           <Text
             style={[
               styles.catButtonText,
+              { color: colors.textMuted },
               currentCategory === 'EAST' && styles.catButtonTextActive,
             ]}
           >
@@ -629,13 +643,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
           onPress={() => handleCategoryChange('WEST')}
           style={[
             styles.catButton,
+            { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' },
             currentCategory === 'WEST' && styles.catButtonActive,
           ]}
         >
-          <Ionicons name="compass" size={13} color={currentCategory === 'WEST' ? '#FFFFFF' : '#64748B'} />
+          <Ionicons name="compass" size={13} color={currentCategory === 'WEST' ? '#FFFFFF' : colors.textMuted} />
           <Text
             style={[
               styles.catButtonText,
+              { color: colors.textMuted },
               currentCategory === 'WEST' && styles.catButtonTextActive,
             ]}
           >
@@ -647,13 +663,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
           onPress={() => handleCategoryChange('TEAMS')}
           style={[
             styles.catButton,
+            { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' },
             currentCategory === 'TEAMS' && styles.catButtonActive,
           ]}
         >
-          <Ionicons name="trophy" size={13} color={currentCategory === 'TEAMS' ? '#FFFFFF' : '#64748B'} />
+          <Ionicons name="trophy" size={13} color={currentCategory === 'TEAMS' ? '#FFFFFF' : colors.textMuted} />
           <Text
             style={[
               styles.catButtonText,
+              { color: colors.textMuted },
               currentCategory === 'TEAMS' && styles.catButtonTextActive,
             ]}
           >
@@ -665,6 +683,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
           onPress={() => handleCategoryChange('LEGENDS')}
           style={[
             styles.catButton,
+            { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' },
             currentCategory === 'LEGENDS' && styles.catButtonActiveLegends,
           ]}
         >
@@ -672,10 +691,11 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
           <Text
             style={[
               styles.catButtonText,
+              { color: colors.textMuted },
               currentCategory === 'LEGENDS' && styles.catButtonTextActiveLegends,
             ]}
           >
-            Equipos Íconos
+            Leyendas
           </Text>
         </TouchableOpacity>
 
@@ -683,13 +703,15 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
           onPress={() => handleCategoryChange('ALL')}
           style={[
             styles.catButton,
+            { backgroundColor: isDark ? colors.bgCardSecondary : '#F1F5F9' },
             currentCategory === 'ALL' && styles.catButtonActive,
           ]}
         >
-          <Ionicons name="people" size={13} color={currentCategory === 'ALL' ? '#FFFFFF' : '#64748B'} />
+          <Ionicons name="people" size={13} color={currentCategory === 'ALL' ? '#FFFFFF' : colors.textMuted} />
           <Text
             style={[
               styles.catButtonText,
+              { color: colors.textMuted },
               currentCategory === 'ALL' && styles.catButtonTextActive,
             ]}
           >
@@ -724,7 +746,10 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                 onPress={() => handleSelectTeam(item.abbreviation)}
                 style={[
                   styles.teamCard,
-                  { borderColor: item.primaryColor ? `${item.primaryColor}55` : '#E2E8F0' },
+                  {
+                    backgroundColor: colors.bgCard,
+                    borderColor: item.primaryColor ? `${item.primaryColor}55` : colors.border,
+                  },
                 ]}
               >
                 <Image
@@ -732,10 +757,10 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                   style={styles.teamLogo}
                   resizeMode="contain"
                 />
-                <Text numberOfLines={1} style={styles.teamName}>{item.name}</Text>
-                <Text style={styles.teamCity}>{item.city}</Text>
+                <Text numberOfLines={1} style={[styles.teamName, { color: colors.text }]}>{item.name}</Text>
+                <Text style={[styles.teamCity, { color: colors.textMuted }]}>{item.city}</Text>
 
-                <View style={styles.teamProgressMiniWrap}>
+                <View style={[styles.teamProgressMiniWrap, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
                   <View
                     style={[
                       styles.teamProgressMiniFill,
@@ -743,7 +768,7 @@ export const CollectionScreen: React.FC<CollectionScreenProps> = ({
                     ]}
                   />
                 </View>
-                <Text style={styles.teamCount}>
+                <Text style={[styles.teamCount, { color: colors.textMuted }]}>
                   {collectedForTeam.length} / {teamPlayers.length} Cartas ({pct}%)
                 </Text>
               </TouchableOpacity>

@@ -3,26 +3,48 @@ import { UserCard, SquadLineup, CustomCoach, SeasonProgress, TeamStanding } from
 import { NBA_PLAYERS_DATA } from '../data/nbaPlayers';
 import { NBA_TEAMS } from '../data/nbaTeams';
 
-const KEYS = {
-  COINS: '@nba_entregable_coins_v5',
-  CARDS: '@nba_entregable_cards_v5',
-  LINEUP: '@nba_entregable_lineup_v5',
-  COACHES: '@nba_entregable_coaches_v5',
-  FIRST_LAUNCH: '@nba_entregable_first_launch_v5',
-  SEASON: '@nba_entregable_season_standings_v5',
-  LAST_FREE_PACK: '@nba_entregable_last_free_pack_v5',
-  TEAM_NAME: '@nba_entregable_team_name_v5',
-  TEAM_LOGO: '@nba_entregable_team_logo_v5',
-  TEAM_ABBR: '@nba_entregable_team_abbr_v5',
-  THREE_POINT_RECORD: '@nba_entregable_3pt_record_v5',
-  LANGUAGE: '@nba_entregable_language_v1',
-  CLAIMED_ACHIEVEMENTS: '@nba_entregable_claimed_achievements_v1',
-  LOGIN_DAYS_RECORD: '@nba_entregable_login_days_v1',
-  CAREER_STATS: '@nba_entregable_career_stats_v1',
+let currentUserId: string | null = null;
+
+const BASE_KEYS = {
+  COINS: 'coins_v7',
+  CARDS: 'cards_v7',
+  LINEUP: 'lineup_v7',
+  COACHES: 'coaches_v7',
+  FIRST_LAUNCH: 'first_launch_v7',
+  SEASON: 'season_standings_v7',
+  LAST_FREE_PACK: 'last_free_pack_v7',
+  TEAM_NAME: 'team_name_v7',
+  TEAM_LOGO: 'team_logo_v7',
+  TEAM_ABBR: 'team_abbr_v7',
+  THREE_POINT_RECORD: '3pt_record_v7',
+  LANGUAGE: 'language_v1',
+  CLAIMED_ACHIEVEMENTS: 'claimed_achievements_v7',
+  LOGIN_DAYS_RECORD: 'login_days_v7',
+  CAREER_STATS: 'career_stats_v7',
+  STARTER_PACK_CLAIMED: 'starter_pack_claimed_v7',
+};
+
+const getKey = (baseKey: string): string => {
+  // Language is global across the device
+  if (baseKey === BASE_KEYS.LANGUAGE) {
+    return `@nba_global_${baseKey}`;
+  }
+  const uid = currentUserId || 'guest';
+  return `@nba_user_${uid}_${baseKey}`;
+};
+
+export const createAllCollectionCards = (): UserCard[] => {
+  return NBA_PLAYERS_DATA.map((player) => ({
+    instanceId: `card_unlocked_${player.id}`,
+    playerId: player.id,
+    player,
+    obtainedAt: new Date().toISOString(),
+    isLocked: false,
+    gamesPlayed: 0,
+  }));
 };
 
 export const createStarterCards = (): UserCard[] => {
-  // Aplicación nueva inicia vacía (0 cartas)
   return [];
 };
 
@@ -57,7 +79,7 @@ const createInitialSeason = (
 
   return {
     currentMatchIndex: 1,
-    totalMatches: 30, // Exact 30 Matches against all 30 NBA Rival Franchises
+    totalMatches: 30, // 30 jornadas contra las 30 franquicias oficiales de la NBA
     standings,
     seasonNumber,
     historyLogs: [],
@@ -67,14 +89,28 @@ const createInitialSeason = (
 };
 
 export const StorageService = {
-  // Check if first launch and initialize clean empty state
-  initApp: async () => {
+  // Manage active user for storage scoping
+  setActiveUser: (userId: string | null) => {
+    currentUserId = userId;
+  },
+
+  getActiveUser: (): string | null => {
+    return currentUserId;
+  },
+
+  // Check if first launch for active user and initialize clean empty state
+  initApp: async (userId?: string) => {
+    if (userId !== undefined) {
+      currentUserId = userId;
+    }
     try {
-      const launched = await AsyncStorage.getItem(KEYS.FIRST_LAUNCH);
+      const launchKey = getKey(BASE_KEYS.FIRST_LAUNCH);
+      const launched = await AsyncStorage.getItem(launchKey);
       if (!launched) {
-        // Inicializar completamente vacío
-        await AsyncStorage.setItem(KEYS.CARDS, JSON.stringify([]));
-        await AsyncStorage.setItem(KEYS.COINS, '500');
+        // Inicializar cada cuenta con inventario limpio (0 jugadores iniciales hasta abrir sobres)
+        const initialCoins = currentUserId && currentUserId !== 'guest' ? '1500' : '500';
+        await AsyncStorage.setItem(getKey(BASE_KEYS.CARDS), JSON.stringify([]));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.COINS), initialCoins);
         
         const initialLineup: SquadLineup = {
           pg: null,
@@ -84,22 +120,25 @@ export const StorageService = {
           c: null,
           coach: null,
         };
-        await AsyncStorage.setItem(KEYS.LINEUP, JSON.stringify(initialLineup));
-        await AsyncStorage.setItem(KEYS.COACHES, JSON.stringify([]));
-        await AsyncStorage.setItem(KEYS.TEAM_NAME, 'Mi Franquicia');
-        await AsyncStorage.setItem(KEYS.SEASON, JSON.stringify(createInitialSeason()));
-        await AsyncStorage.setItem(KEYS.FIRST_LAUNCH, 'true');
+        await AsyncStorage.setItem(getKey(BASE_KEYS.LINEUP), JSON.stringify(initialLineup));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.COACHES), JSON.stringify([]));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.TEAM_NAME), 'Mi Franquicia');
+        await AsyncStorage.setItem(getKey(BASE_KEYS.TEAM_LOGO), 'https://a.espncdn.com/i/teamlogos/nba/500/lal.png');
+        await AsyncStorage.setItem(getKey(BASE_KEYS.TEAM_ABBR), 'LAL');
+        await AsyncStorage.setItem(getKey(BASE_KEYS.SEASON), JSON.stringify(createInitialSeason()));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.CLAIMED_ACHIEVEMENTS), JSON.stringify([]));
+        await AsyncStorage.setItem(launchKey, 'true');
       }
     } catch (e) {
       console.error('Failed to init app storage:', e);
     }
   },
 
-  // Reset all to empty
+  // Reset active user's local storage to empty
   clearAll: async () => {
     try {
-      const allKeys = Object.values(KEYS);
-      await AsyncStorage.multiRemove(allKeys);
+      const userKeys = Object.values(BASE_KEYS).map((k) => getKey(k));
+      await AsyncStorage.multiRemove(userKeys);
       await StorageService.initApp();
     } catch (e) {
       console.error('Failed to clear app storage:', e);
@@ -109,8 +148,9 @@ export const StorageService = {
   // Coins
   getCoins: async (): Promise<number> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.COINS);
-      return val !== null ? parseInt(val, 10) : 500;
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.COINS));
+      if (val !== null) return parseInt(val, 10);
+      return currentUserId && currentUserId !== 'guest' ? 1500 : 500;
     } catch {
       return 500;
     }
@@ -118,7 +158,7 @@ export const StorageService = {
 
   setCoins: async (amount: number): Promise<void> => {
     try {
-      await AsyncStorage.setItem(KEYS.COINS, amount.toString());
+      await AsyncStorage.setItem(getKey(BASE_KEYS.COINS), amount.toString());
     } catch (e) {
       console.error('Failed to set coins', e);
     }
@@ -134,9 +174,12 @@ export const StorageService = {
   // Cards Collection
   getCards: async (): Promise<UserCard[]> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.CARDS);
-      if (!val) return [];
-      const rawCards: UserCard[] = JSON.parse(val);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.CARDS));
+      let rawCards: UserCard[] = val ? JSON.parse(val) : [];
+
+      if (!rawCards || !Array.isArray(rawCards) || rawCards.length === 0) {
+        return [];
+      }
 
       // Hydrate against NBA_PLAYERS_DATA to guarantee accurate official player attributes and portraits
       const playerMapById = new Map(NBA_PLAYERS_DATA.map((p) => [p.id, p]));
@@ -164,7 +207,7 @@ export const StorageService = {
 
   setCards: async (cards: UserCard[]): Promise<void> => {
     try {
-      await AsyncStorage.setItem(KEYS.CARDS, JSON.stringify(cards));
+      await AsyncStorage.setItem(getKey(BASE_KEYS.CARDS), JSON.stringify(cards));
     } catch (e) {
       console.error('Failed to set cards', e);
     }
@@ -173,21 +216,21 @@ export const StorageService = {
   addCards: async (newCards: UserCard[]): Promise<UserCard[]> => {
     const existing = await StorageService.getCards();
     const updated = [...newCards, ...existing];
-    await AsyncStorage.setItem(KEYS.CARDS, JSON.stringify(updated));
+    await AsyncStorage.setItem(getKey(BASE_KEYS.CARDS), JSON.stringify(updated));
     return updated;
   },
 
   removeCard: async (instanceId: string): Promise<UserCard[]> => {
     const existing = await StorageService.getCards();
     const updated = existing.filter((c) => c.instanceId !== instanceId);
-    await AsyncStorage.setItem(KEYS.CARDS, JSON.stringify(updated));
+    await AsyncStorage.setItem(getKey(BASE_KEYS.CARDS), JSON.stringify(updated));
     return updated;
   },
 
   // Squad Lineup
   getLineup: async (): Promise<SquadLineup> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.LINEUP);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.LINEUP));
       if (val) {
         const parsed: SquadLineup = JSON.parse(val);
         const playerMapById = new Map(NBA_PLAYERS_DATA.map((p) => [p.id, p]));
@@ -217,7 +260,7 @@ export const StorageService = {
 
   saveLineup: async (lineup: SquadLineup): Promise<void> => {
     try {
-      await AsyncStorage.setItem(KEYS.LINEUP, JSON.stringify(lineup));
+      await AsyncStorage.setItem(getKey(BASE_KEYS.LINEUP), JSON.stringify(lineup));
     } catch (e) {
       console.error('Failed to save lineup', e);
     }
@@ -226,7 +269,7 @@ export const StorageService = {
   // Custom Coaches
   getCoaches: async (): Promise<CustomCoach[]> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.COACHES);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.COACHES));
       return val ? JSON.parse(val) : [];
     } catch {
       return [];
@@ -236,14 +279,22 @@ export const StorageService = {
   saveCoach: async (coach: CustomCoach): Promise<CustomCoach[]> => {
     const existing = await StorageService.getCoaches();
     const updated = [coach, ...existing.filter((c) => c.id !== coach.id)];
-    await AsyncStorage.setItem(KEYS.COACHES, JSON.stringify(updated));
+    await AsyncStorage.setItem(getKey(BASE_KEYS.COACHES), JSON.stringify(updated));
     return updated;
+  },
+
+  saveAllCoaches: async (coaches: CustomCoach[]): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(getKey(BASE_KEYS.COACHES), JSON.stringify(coaches));
+    } catch (e) {
+      console.error('Failed to save all coaches', e);
+    }
   },
 
   // Team Name
   getTeamName: async (): Promise<string> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.TEAM_NAME);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.TEAM_NAME));
       return val || 'Mi Quinteto';
     } catch {
       return 'Mi Quinteto';
@@ -253,16 +304,16 @@ export const StorageService = {
   setTeamName: async (name: string): Promise<string> => {
     try {
       const trimmed = name.trim() || 'Mi Quinteto';
-      await AsyncStorage.setItem(KEYS.TEAM_NAME, trimmed);
+      await AsyncStorage.setItem(getKey(BASE_KEYS.TEAM_NAME), trimmed);
 
       // Also update teamName in stored season if present
-      const seasonVal = await AsyncStorage.getItem(KEYS.SEASON);
+      const seasonVal = await AsyncStorage.getItem(getKey(BASE_KEYS.SEASON));
       if (seasonVal) {
         const parsed: SeasonProgress = JSON.parse(seasonVal);
         const updatedStandings = parsed.standings.map((t) =>
           t.isUserTeam ? { ...t, teamName: trimmed } : t
         );
-        await AsyncStorage.setItem(KEYS.SEASON, JSON.stringify({ ...parsed, standings: updatedStandings }));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.SEASON), JSON.stringify({ ...parsed, standings: updatedStandings }));
       }
       return trimmed;
     } catch (e) {
@@ -274,7 +325,7 @@ export const StorageService = {
   // Team Logo & Franchise Customization
   getTeamLogo: async (): Promise<string> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.TEAM_LOGO);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.TEAM_LOGO));
       return val || 'https://a.espncdn.com/i/teamlogos/nba/500/lal.png';
     } catch {
       return 'https://a.espncdn.com/i/teamlogos/nba/500/lal.png';
@@ -283,16 +334,16 @@ export const StorageService = {
 
   setTeamLogo: async (logoUrl: string): Promise<string> => {
     try {
-      await AsyncStorage.setItem(KEYS.TEAM_LOGO, logoUrl);
+      await AsyncStorage.setItem(getKey(BASE_KEYS.TEAM_LOGO), logoUrl);
 
       // Also update logo in stored season if present
-      const seasonVal = await AsyncStorage.getItem(KEYS.SEASON);
+      const seasonVal = await AsyncStorage.getItem(getKey(BASE_KEYS.SEASON));
       if (seasonVal) {
         const parsed: SeasonProgress = JSON.parse(seasonVal);
         const updatedStandings = parsed.standings.map((t) =>
           t.isUserTeam ? { ...t, logoUrl } : t
         );
-        await AsyncStorage.setItem(KEYS.SEASON, JSON.stringify({ ...parsed, standings: updatedStandings }));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.SEASON), JSON.stringify({ ...parsed, standings: updatedStandings }));
       }
       return logoUrl;
     } catch (e) {
@@ -303,7 +354,7 @@ export const StorageService = {
 
   getTeamAbbr: async (): Promise<string> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.TEAM_ABBR);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.TEAM_ABBR));
       return val || 'LAL';
     } catch {
       return 'LAL';
@@ -312,14 +363,14 @@ export const StorageService = {
 
   setTeamAbbr: async (abbr: string): Promise<string> => {
     try {
-      await AsyncStorage.setItem(KEYS.TEAM_ABBR, abbr);
-      const seasonVal = await AsyncStorage.getItem(KEYS.SEASON);
+      await AsyncStorage.setItem(getKey(BASE_KEYS.TEAM_ABBR), abbr);
+      const seasonVal = await AsyncStorage.getItem(getKey(BASE_KEYS.SEASON));
       if (seasonVal) {
         const parsed: SeasonProgress = JSON.parse(seasonVal);
         const updatedStandings = parsed.standings.map((t) =>
           t.isUserTeam ? { ...t, teamAbbr: abbr } : t
         );
-        await AsyncStorage.setItem(KEYS.SEASON, JSON.stringify({ ...parsed, standings: updatedStandings }));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.SEASON), JSON.stringify({ ...parsed, standings: updatedStandings }));
       }
       return abbr;
     } catch {
@@ -333,10 +384,9 @@ export const StorageService = {
       const teamName = await StorageService.getTeamName();
       const teamLogo = await StorageService.getTeamLogo();
       const teamAbbr = await StorageService.getTeamAbbr();
-      const val = await AsyncStorage.getItem(KEYS.SEASON);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.SEASON));
       if (val) {
         const parsed: SeasonProgress = JSON.parse(val);
-        // Ensure totalMatches is always migrated to 30 matches and custom teamName/logo is set
         const standings = parsed.standings.map((t) =>
           t.isUserTeam ? { ...t, teamName, logoUrl: teamLogo, teamAbbr } : t
         );
@@ -353,7 +403,7 @@ export const StorageService = {
 
   saveSeason: async (season: SeasonProgress): Promise<void> => {
     try {
-      await AsyncStorage.setItem(KEYS.SEASON, JSON.stringify(season));
+      await AsyncStorage.setItem(getKey(BASE_KEYS.SEASON), JSON.stringify(season));
     } catch (e) {
       console.error('Failed to save season', e);
     }
@@ -381,7 +431,7 @@ export const StorageService = {
   // Free Bronze Pack Timer (5 mins cooldown)
   getLastFreePackTime: async (): Promise<number> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.LAST_FREE_PACK);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.LAST_FREE_PACK));
       return val ? parseInt(val, 10) : 0;
     } catch {
       return 0;
@@ -390,7 +440,7 @@ export const StorageService = {
 
   setLastFreePackTime: async (timestamp: number): Promise<void> => {
     try {
-      await AsyncStorage.setItem(KEYS.LAST_FREE_PACK, timestamp.toString());
+      await AsyncStorage.setItem(getKey(BASE_KEYS.LAST_FREE_PACK), timestamp.toString());
     } catch (e) {
       console.error('Failed to set last free pack time', e);
     }
@@ -398,7 +448,7 @@ export const StorageService = {
 
   getThreePointHighScore: async (): Promise<{ score: number; shooterName: string }> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.THREE_POINT_RECORD);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.THREE_POINT_RECORD));
       if (val) {
         return JSON.parse(val);
       }
@@ -411,7 +461,7 @@ export const StorageService = {
       const current = await StorageService.getThreePointHighScore();
       if (score > current.score) {
         await AsyncStorage.setItem(
-          KEYS.THREE_POINT_RECORD,
+          getKey(BASE_KEYS.THREE_POINT_RECORD),
           JSON.stringify({ score, shooterName, date: new Date().toISOString() })
         );
         // Also update career stats
@@ -430,7 +480,7 @@ export const StorageService = {
   // Language Settings
   getLanguage: async (): Promise<'es' | 'en'> => {
     try {
-      const val = await AsyncStorage.getItem(KEYS.LANGUAGE);
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.LANGUAGE));
       return val === 'en' ? 'en' : 'es';
     } catch {
       return 'es';
@@ -439,7 +489,7 @@ export const StorageService = {
 
   setLanguage: async (lang: 'es' | 'en'): Promise<void> => {
     try {
-      await AsyncStorage.setItem(KEYS.LANGUAGE, lang);
+      await AsyncStorage.setItem(getKey(BASE_KEYS.LANGUAGE), lang);
     } catch (e) {
       console.error('Failed to save language', e);
     }
@@ -449,7 +499,7 @@ export const StorageService = {
   recordDailyLogin: async (): Promise<number> => {
     try {
       const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-      const raw = await AsyncStorage.getItem(KEYS.LOGIN_DAYS_RECORD);
+      const raw = await AsyncStorage.getItem(getKey(BASE_KEYS.LOGIN_DAYS_RECORD));
       let record: { lastDate: string; days: number; history: string[] } = {
         lastDate: '',
         days: 0,
@@ -465,7 +515,7 @@ export const StorageService = {
         record.days = (record.days || 0) + 1;
         if (!record.history) record.history = [];
         record.history.push(today);
-        await AsyncStorage.setItem(KEYS.LOGIN_DAYS_RECORD, JSON.stringify(record));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.LOGIN_DAYS_RECORD), JSON.stringify(record));
       }
 
       return record.days || 1;
@@ -476,7 +526,7 @@ export const StorageService = {
 
   getLoginDays: async (): Promise<number> => {
     try {
-      const raw = await AsyncStorage.getItem(KEYS.LOGIN_DAYS_RECORD);
+      const raw = await AsyncStorage.getItem(getKey(BASE_KEYS.LOGIN_DAYS_RECORD));
       if (raw) {
         const record = JSON.parse(raw);
         return record.days || 1;
@@ -488,10 +538,18 @@ export const StorageService = {
   // Claimed Achievements
   getClaimedAchievements: async (): Promise<string[]> => {
     try {
-      const raw = await AsyncStorage.getItem(KEYS.CLAIMED_ACHIEVEMENTS);
+      const raw = await AsyncStorage.getItem(getKey(BASE_KEYS.CLAIMED_ACHIEVEMENTS));
       return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
+    }
+  },
+
+  saveClaimedAchievements: async (achievements: string[]): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(getKey(BASE_KEYS.CLAIMED_ACHIEVEMENTS), JSON.stringify(achievements));
+    } catch (e) {
+      console.error('Failed to save claimed achievements', e);
     }
   },
 
@@ -500,7 +558,7 @@ export const StorageService = {
       const current = await StorageService.getClaimedAchievements();
       if (!current.includes(achievementId)) {
         const updated = [...current, achievementId];
-        await AsyncStorage.setItem(KEYS.CLAIMED_ACHIEVEMENTS, JSON.stringify(updated));
+        await AsyncStorage.setItem(getKey(BASE_KEYS.CLAIMED_ACHIEVEMENTS), JSON.stringify(updated));
         return updated;
       }
       return current;
@@ -518,7 +576,7 @@ export const StorageService = {
     threePointHighScore: number;
   }> => {
     try {
-      const raw = await AsyncStorage.getItem(KEYS.CAREER_STATS);
+      const raw = await AsyncStorage.getItem(getKey(BASE_KEYS.CAREER_STATS));
       const loginDays = await StorageService.getLoginDays();
       const threePt = await StorageService.getThreePointHighScore();
 
@@ -569,11 +627,33 @@ export const StorageService = {
     try {
       const current = await StorageService.getCareerStats();
       const updated = updater(current);
-      await AsyncStorage.setItem(KEYS.CAREER_STATS, JSON.stringify(updated));
+      await AsyncStorage.setItem(getKey(BASE_KEYS.CAREER_STATS), JSON.stringify(updated));
       return updated;
     } catch (e) {
       console.error('Failed to update career stats', e);
       return null;
+    }
+  },
+
+  // Starter Welcome Pack Claimed Status
+  hasClaimedStarterPack: async (): Promise<boolean> => {
+    try {
+      const val = await AsyncStorage.getItem(getKey(BASE_KEYS.STARTER_PACK_CLAIMED));
+      return val === 'true';
+    } catch {
+      return false;
+    }
+  },
+
+  setClaimedStarterPack: async (claimed: boolean = true): Promise<void> => {
+    try {
+      if (claimed) {
+        await AsyncStorage.setItem(getKey(BASE_KEYS.STARTER_PACK_CLAIMED), 'true');
+      } else {
+        await AsyncStorage.removeItem(getKey(BASE_KEYS.STARTER_PACK_CLAIMED));
+      }
+    } catch (e) {
+      console.error('Failed to set claimed starter pack status', e);
     }
   },
 };

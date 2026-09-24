@@ -10,6 +10,7 @@ import { SquadLineup, Position, UserCard, CustomCoach } from '../../types';
 import { NBACard } from '../Card/NBACard';
 import { CustomCoachCard } from '../Card/CustomCoachCard';
 import { THEME } from '../../theme/colors';
+import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -28,6 +29,7 @@ export const BasketballCourt: React.FC<BasketballCourtProps> = ({
   onPlayerPress,
   onCoachPress,
 }) => {
+  const { colors, isDark } = useTheme();
   const renderSlot = (pos: Position, card: UserCard | null) => {
     return (
       <TouchableOpacity
@@ -149,23 +151,23 @@ export const BasketballCourt: React.FC<BasketballCourtProps> = ({
       </View>
 
       {/* Head Coach / Banquillo Section (Full Player-Sized Card) */}
-      <View style={styles.coachSection}>
+      <View style={[styles.coachSection, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         <View style={styles.coachHeaderRow}>
           <View style={styles.coachTitleWrap}>
-            <Text style={styles.coachTitle}>BANQUILLO Y DIRECCIÓN TÉCNICA</Text>
+            <Text style={[styles.coachTitle, { color: colors.text }]}>BANQUILLO Y DIRECCIÓN TÉCNICA</Text>
             {lineup.coach ? (
               <View style={styles.coachDetailBadgesRow}>
-                <View style={styles.tacticBadgePill}>
-                  <Text style={styles.tacticBadgeText}>Filosofía: {lineup.coach.tactic}</Text>
+                <View style={[styles.tacticBadgePill, { backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF', borderColor: colors.border }]}>
+                  <Text style={[styles.tacticBadgeText, { color: isDark ? '#93C5FD' : '#1D4ED8' }]}>Filosofía: {lineup.coach.tactic}</Text>
                 </View>
-                <View style={styles.boostBadgePill}>
-                  <Text style={styles.boostBadgeText}>
+                <View style={[styles.boostBadgePill, { backgroundColor: isDark ? '#064E3B' : '#F0FDF4', borderColor: colors.border }]}>
+                  <Text style={[styles.boostBadgeText, { color: isDark ? '#6EE7B7' : '#15803D' }]}>
                     +{lineup.coach.boostOffense} OFF · +{lineup.coach.boostDefense} DEF · +{lineup.coach.boostChemistry}% QUÍM
                   </Text>
                 </View>
               </View>
             ) : (
-              <Text style={styles.coachSubtitle}>
+              <Text style={[styles.coachSubtitle, { color: colors.textMuted }]}>
                 Toca para crear tu carta de DT oficial con selfie
               </Text>
             )}
@@ -183,12 +185,12 @@ export const BasketballCourt: React.FC<BasketballCourtProps> = ({
                 <CustomCoachCard coach={lineup.coach} size="sm" />
               </View>
             ) : (
-              <View style={styles.emptyCoachSlot}>
+              <View style={[styles.emptyCoachSlot, { backgroundColor: isDark ? colors.bgCardSecondary : '#F8FAFC', borderColor: colors.border }]}>
                 <View style={styles.emptyCoachIcon}>
                   <Ionicons name="person-outline" size={24} color="#CA8A04" />
                 </View>
                 <Text style={styles.emptyCoachText}>SIN ENTRENADOR ASIGNADO</Text>
-                <Text style={styles.emptyCoachSubText}>Toca para crear DT o asignar táctica</Text>
+                <Text style={[styles.emptyCoachSubText, { color: colors.textMuted }]}>Toca para crear DT o asignar táctica</Text>
               </View>
             )}
           </TouchableOpacity>

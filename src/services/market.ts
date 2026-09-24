@@ -61,9 +61,9 @@ export const generateDailyMarketBatch = (seedTime: number): MarketItem[] => {
   const selected: NBAPlayer[] = [];
   const usedIds = new Set<string>();
 
-  // 1. Pick 1 Low-Tier Icon (OVR 90 - 92, strictly < 94)
+  // 1. Pick 1 Icon / Legend (OVR 93 - 95)
   const lowIcons = ALL_ICON_PLAYERS.filter(
-    (p) => p.stats.ovr >= 90 && p.stats.ovr <= 92
+    (p) => p.stats.ovr >= 93 && p.stats.ovr <= 95
   ).sort(() => Math.random() - 0.5);
   if (lowIcons.length > 0) {
     selected.push(lowIcons[0]);
